@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    /* Keep Alpine-conditional blocks hidden until Alpine evaluates them,
+       so a form never flashes both of its branches on load. */
+    [x-cloak] {
+        display: none !important;
+    }
+}

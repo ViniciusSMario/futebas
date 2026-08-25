@@ -1,0 +1,11 @@
+@props(['active'])
+
+@php
+$classes = ($active ?? false)
+            ? 'block w-full ps-3 pe-4 py-2 border-l-4 border-emerald-400 text-start text-base font-medium text-emerald-300 bg-emerald-500/10 focus:outline-none focus:text-emerald-200 focus:bg-emerald-500/15 focus:border-emerald-400 transition duration-150 ease-in-out'
+            : 'block w-full ps-3 pe-4 py-2 border-l-4 border-transparent text-start text-base font-medium text-pitch-300 hover:text-white hover:bg-pitch-800 hover:border-pitch-600 focus:outline-none focus:text-white focus:bg-pitch-800 focus:border-pitch-600 transition duration-150 ease-in-out';
+@endphp
+
+<a {{ $attributes->merge(['class' => $classes]) }}>
+    {{ $slot }}
+</a>
