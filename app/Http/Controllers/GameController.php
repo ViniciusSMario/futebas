@@ -11,6 +11,7 @@ use App\Models\Rating;
 use App\Notifications\GameCancelled;
 use App\Notifications\GameUpdated;
 use App\Services\GamePlayerService;
+use App\Services\TeamDrawService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -196,7 +197,7 @@ class GameController extends Controller
      * Display the organizer's management panel for a game, with the
      * requested tab's data eager-loaded to avoid N+1 queries.
      */
-    public function show(Request $request, Game $game): View
+    public function show(Request $request, Game $game, TeamDrawService $teams): View
     {
         abort_unless($game->user_id === $request->user()->id, 403);
 
@@ -228,9 +229,14 @@ class GameController extends Controller
                     ->orderBy('joined_at')
                     ->get(),
             ],
-            'times' => $data['gameTeams'] = $game->gameTeams()
-                ->with('gamePlayers.user', 'gamePlayers.guestPlayer')
-                ->get(),
+            'times' => [
+                $data['gameTeams'] = $game->gameTeams()
+                    ->with('gamePlayers.user.playerProfile', 'gamePlayers.guestPlayer')
+                    ->get(),
+                // The strength each team came out with, so the balancing is
+                // something the organizer can check rather than trust.
+                $data['teamBalance'] = $teams->summarise($data['gameTeams']),
+            ],
             default => null,
         };
 

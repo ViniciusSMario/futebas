@@ -11,7 +11,7 @@
                 </p>
             @elseif (session('status') === 'joined-waiting-list')
                 <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Game lotado — você entrou na lista de espera.') }}
+                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Game lotado, você entrou na lista de espera.') }}
                 </p>
             @endif
 

@@ -23,7 +23,7 @@
 
                     <div class="mt-4 flex items-end justify-between gap-1.5 h-24">
                         @foreach ($trend as $rating)
-                            <div class="flex-1 flex flex-col items-center gap-1.5 group" title="{{ $rating->created_at->format('d/m/Y') }} — {{ $rating->overall_rating }}/5">
+                            <div class="flex-1 flex flex-col items-center gap-1.5 group" title="{{ $rating->created_at->format('d/m/Y') }} - {{ $rating->overall_rating }}/5">
                                 <div class="w-full rounded-t bg-gradient-to-t from-emerald-700 to-emerald-500 group-hover:from-emerald-600 group-hover:to-emerald-400 transition"
                                     style="height: {{ (int) round($rating->overall_rating / 5 * 100) }}%"></div>
                                 <span class="text-[10px] font-bold text-pitch-500 tabular-nums">{{ $rating->overall_rating }}</span>

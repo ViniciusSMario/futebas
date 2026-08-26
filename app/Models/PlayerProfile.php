@@ -55,6 +55,20 @@ class PlayerProfile extends Model
         'Avançado',
     ];
 
+    /**
+     * Strength attributed to a player who has no ratings yet, so a newcomer
+     * still has a place on the same 1-99 scale as everyone else.
+     */
+    public const LEVEL_SCORES = [
+        'Iniciante' => 62,
+        'Recreativo' => 72,
+        'Intermediário' => 80,
+        'Avançado' => 88,
+    ];
+
+    /** Where a player with neither ratings nor a declared level sits. */
+    public const DEFAULT_SCORE = 72;
+
     public const STATES = [
         'AC' => 'Acre',
         'AL' => 'Alagoas',
@@ -109,6 +123,24 @@ class PlayerProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The single 1-99 number this app uses to say how strong a player is.
+     *
+     * Ratings win once they exist, because they are other people's
+     * judgement rather than the player's own; the declared level stands in
+     * until then. It is the number printed on the player card, and the one
+     * the balanced team draw sorts on — the two must agree, or a draw the
+     * organizer can see is unbalanced would call itself balanced.
+     */
+    public function overallScore(): int
+    {
+        if ($this->ratings_count > 0) {
+            return max(1, min(99, (int) round((float) $this->average_rating * 20)));
+        }
+
+        return self::LEVEL_SCORES[$this->level] ?? self::DEFAULT_SCORE;
     }
 
     /**

@@ -36,7 +36,7 @@ class WelcomeTest extends TestCase
         $response->assertOk();
         $response->assertSee('Criar conta');
         $response->assertSee('Entrar');
-        $response->assertDontSee('Ir para o Dashboard');
+        $response->assertDontSee('Ir para o app');
     }
 
     public function test_authenticated_users_see_a_dashboard_link_instead(): void
@@ -46,7 +46,7 @@ class WelcomeTest extends TestCase
         $response = $this->actingAs($user)->get('/');
 
         $response->assertOk();
-        $response->assertSee('Ir para o Dashboard');
+        $response->assertSee('Ir para o app');
         $response->assertSee(route('dashboard'), false);
     }
 }

@@ -15,7 +15,7 @@
         <div class="min-w-0 grow">
             <h3 class="font-bold text-white">{{ __('Notificações no celular') }}</h3>
             <p class="mt-1 text-sm text-pitch-400">
-                {{ __('Receba um alerta na hora em que um SOS aparecer na sua região — mesmo com o app fechado.') }}
+                {{ __('Receba um alerta na hora em que um SOS aparecer na sua região, mesmo com o app fechado.') }}
             </p>
 
             <template x-if="permission === 'unsupported'">

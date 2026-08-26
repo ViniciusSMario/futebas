@@ -116,7 +116,7 @@
                 </h2>
 
                 <p class="mt-1 text-sm text-pitch-400">
-                    {{ __('Você está cancelando sua participação na partida de :date, às :time. Se quiser, informe o motivo — o organizador poderá ver essa justificativa.', ['date' => $game->date->format('d/m/Y'), 'time' => $game->start_time->format('H:i')]) }}
+                    {{ __('Você está cancelando sua participação na partida de :date, às :time. Se quiser, informe o motivo - o organizador poderá ver essa justificativa.', ['date' => $game->date->format('d/m/Y'), 'time' => $game->start_time->format('H:i')]) }}
                 </p>
 
                 <div class="mt-4">

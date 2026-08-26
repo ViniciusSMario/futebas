@@ -137,7 +137,7 @@
                                         <div>
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-pitch-500">{{ __('Cidade') }}</p>
                                             <p class="font-bold text-white text-sm truncate">
-                                                {{ $profile?->city ?? '—' }}
+                                                {{ $profile?->city ?? '-' }}
                                                 @if ($sameCity)
                                                     <span class="text-emerald-400" title="{{ __('Mesma cidade da partida') }}">•</span>
                                                 @endif
@@ -158,7 +158,7 @@
 
                                         <div>
                                             <p class="text-[11px] font-semibold uppercase tracking-wide text-pitch-500">{{ __('Nível') }}</p>
-                                            <p class="font-bold text-white text-sm">{{ $profile?->level ?? '—' }}</p>
+                                            <p class="font-bold text-white text-sm">{{ $profile?->level ?? '-' }}</p>
                                         </div>
 
                                         {{-- Turning up is the thing an SOS actually buys. --}}

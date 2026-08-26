@@ -8,4 +8,199 @@
     [x-cloak] {
         display: none !important;
     }
+
+    html {
+        scroll-behavior: smooth;
+        /* Anchor targets land below the sticky header instead of under it. */
+        scroll-padding-top: 5rem;
+        /* Kills the grey flash Android paints over every tap target. */
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        html {
+            scroll-behavior: auto;
+        }
+    }
+
+    /* On a near-black surface the default scrollbar is a bright gash. */
+    .scrollbar-slim {
+        scrollbar-width: thin;
+        scrollbar-color: theme('colors.pitch.700') transparent;
+    }
+
+    .scrollbar-slim::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .scrollbar-slim::-webkit-scrollbar-thumb {
+        background-color: theme('colors.pitch.700');
+        border-radius: 9999px;
+    }
+
+    .scrollbar-slim::-webkit-scrollbar-track {
+        background: transparent;
+    }
+}
+
+@layer components {
+    /* --- Surfaces -------------------------------------------------- */
+
+    .glass {
+        background: rgb(255 255 255 / 0.07);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgb(255 255 255 / 0.12);
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #6ee7b7 0%, #34d399 40%, #a7f3d0 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Soft coloured light pooling behind a dark section — cheaper and
+       far more controllable than a background image. */
+    .mesh-pitch {
+        background-image:
+            radial-gradient(at 18% 24%, rgb(16 185 129 / 0.26) 0px, transparent 52%),
+            radial-gradient(at 82% 12%, rgb(52 211 153 / 0.18) 0px, transparent 45%),
+            radial-gradient(at 42% 84%, rgb(5 150 105 / 0.3) 0px, transparent 52%),
+            radial-gradient(at 92% 72%, rgb(16 185 129 / 0.14) 0px, transparent 42%);
+    }
+
+    .noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        opacity: 0.04;
+    }
+
+    /* Pitch line markings, used as a decorative backdrop. */
+    .field-lines {
+        background-image:
+            linear-gradient(to right, rgb(255 255 255 / 0.06) 1px, transparent 1px),
+            linear-gradient(to bottom, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+        background-size: 48px 48px;
+    }
+
+    /* --- Motion ---------------------------------------------------- */
+
+    .btn-shine {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn-shine::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.28) 50%, transparent 60%);
+        background-size: 200% 100%;
+        animation: shimmer 3s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    /* Scroll reveal. Elements start hidden and are unhidden by the
+       IntersectionObserver in resources/js/app.js. */
+    .reveal {
+        opacity: 0;
+        transform: translateY(32px);
+        transition:
+            opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+            transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        will-change: opacity, transform;
+    }
+
+    .reveal.from-left {
+        transform: translateX(-28px);
+    }
+
+    .reveal.from-right {
+        transform: translateX(28px);
+    }
+
+    .reveal.from-scale {
+        transform: scale(0.94);
+    }
+
+    .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0) translateX(0) scale(1);
+    }
+
+    .reveal[data-delay='1'] { transition-delay: 0.08s; }
+    .reveal[data-delay='2'] { transition-delay: 0.16s; }
+    .reveal[data-delay='3'] { transition-delay: 0.24s; }
+    .reveal[data-delay='4'] { transition-delay: 0.32s; }
+    .reveal[data-delay='5'] { transition-delay: 0.4s; }
+    .reveal[data-delay='6'] { transition-delay: 0.48s; }
+
+    /* --- Layout helpers -------------------------------------------- */
+
+    /* Full-bleed horizontal scroller that still respects the page gutter:
+       cards peek at the right edge so the row reads as swipeable. */
+    .snap-row {
+        display: flex;
+        gap: 0.75rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scroll-padding-left: 1rem;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .snap-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .snap-row > * {
+        scroll-snap-align: start;
+        flex: 0 0 auto;
+    }
+
+    /* iOS home-indicator / notch clearance. */
+    .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Clears the fixed bottom nav (plus the gesture bar) on phones, and
+       collapses to ordinary spacing once the sidebar takes over at lg. */
+    .pb-bottom-nav {
+        padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+    }
+
+    @media (min-width: 1024px) {
+        .pb-bottom-nav {
+            padding-bottom: 2rem;
+        }
+    }
+
+    .pt-safe {
+        padding-top: env(safe-area-inset-top);
+    }
+}
+
+@layer utilities {
+    /* A 44x44px minimum is the accessibility floor for a touch target;
+       icon buttons that look smaller still need to hit it. */
+    .tap-target {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .animate-float,
+    .animate-float-slow,
+    .animate-pulse-soft,
+    .animate-slide-up,
+    .animate-marquee,
+    .btn-shine::after {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+        transition: none !important;
+    }
 }

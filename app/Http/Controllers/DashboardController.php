@@ -23,6 +23,18 @@ class DashboardController extends Controller
         if ($user->hasRole(User::ROLE_ORGANIZER)) {
             return view('dashboard.organizer', [
                 'gamesCreatedCount' => Game::where('user_id', $user->id)->count(),
+                // The match the organizer is most likely to have opened the
+                // app for. Ordered by the same pair `upcoming()` filters on,
+                // since `date` carries a time component of its own.
+                'nextGame' => Game::query()
+                    ->withCount(['gamePlayers as confirmed_players_count' => fn ($q) => $q
+                        ->where('status', GamePlayer::STATUS_CONFIRMED)])
+                    ->where('user_id', $user->id)
+                    ->where('status', Game::STATUS_OPEN)
+                    ->upcoming()
+                    ->orderBy('date')
+                    ->orderBy('start_time')
+                    ->first(),
                 'pendingInvitationsSentCount' => Invitation::whereHas('game', fn ($q) => $q->where('user_id', $user->id))
                     ->where('status', 'pending')
                     ->count(),
@@ -55,6 +67,20 @@ class DashboardController extends Controller
                 ->get()
                 ->filter(fn (GamePlayer $gamePlayer) => $gamePlayer->game->isCheckInOpen())
                 ->values(),
+            // The next match the player is actually confirmed for — the
+            // answer to "quando eu jogo?", which is why they opened the app.
+            'nextGame' => Game::query()
+                ->withCount(['gamePlayers as confirmed_players_count' => fn ($q) => $q
+                    ->where('status', GamePlayer::STATUS_CONFIRMED)])
+                ->where('status', Game::STATUS_OPEN)
+                ->whereHas('gamePlayers', fn ($q) => $q
+                    ->where('user_id', $user->id)
+                    ->where('status', GamePlayer::STATUS_CONFIRMED)
+                )
+                ->upcoming()
+                ->orderBy('date')
+                ->orderBy('start_time')
+                ->first(),
             'availabilities' => $user->availabilities()->orderBy('day_of_week')->get(),
             'pendingInvitationsCount' => $user->invitations()->where('status', 'pending')->count(),
             'pendingSosApplicationsCount' => $user->sosApplications()

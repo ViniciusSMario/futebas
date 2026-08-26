@@ -36,8 +36,8 @@
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-                <x-stat-card icon="heroicon-o-flag" :label="__('Posições')" :value="$playerProfile->positions ? implode(', ', $playerProfile->positions) : '—'" color="emerald" />
-                <x-stat-card icon="heroicon-o-trophy" :label="__('Modalidades')" :value="$playerProfile->modalities ? implode(', ', $playerProfile->modalities) : '—'" color="blue" />
+                <x-stat-card icon="heroicon-o-flag" :label="__('Posições')" :value="$playerProfile->positions ? implode(', ', $playerProfile->positions) : '-'" color="emerald" />
+                <x-stat-card icon="heroicon-o-trophy" :label="__('Modalidades')" :value="$playerProfile->modalities ? implode(', ', $playerProfile->modalities) : '-'" color="blue" />
                 <x-stat-card icon="heroicon-o-chart-bar" :label="__('Nível')" :value="$playerProfile->level" color="amber" />
                 <x-stat-card icon="heroicon-o-currency-dollar" :label="__('Valor/partida')" :value="'R$ '.number_format((float) $playerProfile->price_per_game, 2, ',', '.')" color="gray" />
                 @if ($playerProfile->ratings_count > 0)

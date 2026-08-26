@@ -1,4 +1,4 @@
-# ⚽ Futebas
+#  Futebas
 
 **Organize sua pelada sem depender do grupo do WhatsApp.**
 

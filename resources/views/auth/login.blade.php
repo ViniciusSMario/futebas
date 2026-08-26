@@ -33,7 +33,7 @@
             @endif
 
             <a class="text-gray-600 hover:text-gray-900" href="{{ route('register') }}">
-                {{ __('Ainda não tenho uma conta') }} — <span class="font-semibold text-green-700">{{ __('Criar conta') }}</span>
+                {{ __('Ainda não tenho uma conta') }} - <span class="font-semibold text-green-700">{{ __('Criar conta') }}</span>
             </a>
         </div>
     </form>

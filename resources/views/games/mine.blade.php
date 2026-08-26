@@ -15,7 +15,7 @@
                 </p>
             @elseif (session('status') === 'already-requested')
                 <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Você já solicitou participação nesse Game — acompanhe o andamento abaixo.') }}
+                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Você já solicitou participação nesse Game, acompanhe o andamento abaixo.') }}
                 </p>
             @elseif (session('status') === 'checked-in')
                 <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">

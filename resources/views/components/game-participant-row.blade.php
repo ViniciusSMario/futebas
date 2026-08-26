@@ -25,7 +25,7 @@
 
     // Attendance only starts meaning something once the check-in window
     // has opened. A guest contact has no account to check in with, so
-    // "hasn't confirmed" is never said about them — only the organizer's
+    // "hasn't confirmed" is never said about them - only the organizer's
     // own no-show mark applies.
     $checkInStarted = $game->hasCheckInStarted();
     $hasCheckedIn = $gamePlayer->hasCheckedIn();

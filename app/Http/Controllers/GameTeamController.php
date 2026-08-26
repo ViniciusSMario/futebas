@@ -4,46 +4,57 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GameTeamDrawRequest;
 use App\Models\Game;
-use App\Models\GamePlayer;
-use App\Models\GameTeam;
+use App\Services\TeamDrawService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
 
 class GameTeamController extends Controller
 {
     /**
-     * Randomly draw (or redraw) teams from the game's confirmed
-     * participants, replacing any previous draw entirely.
+     * Draw (or redraw) teams from the game's confirmed participants,
+     * replacing any previous draw entirely.
      */
-    public function draw(GameTeamDrawRequest $request, Game $game): RedirectResponse
+    public function draw(GameTeamDrawRequest $request, Game $game, TeamDrawService $teams): RedirectResponse
     {
+        // Someone else's game is a real authorization failure. The match
+        // being over is not — it's a state the organizer can reach with a
+        // stale tab or the back button, and it deserves an explanation
+        // rather than a 403 wall.
         abort_unless($game->user_id === $request->user()->id, 403);
-        abort_unless($game->isOpen(), 403);
+
+        if (! $game->isOpen()) {
+            return $this->backToTeams($game)->withErrors([
+                'teams_count' => $game->status === Game::STATUS_CANCELLED
+                    ? __('Esta partida foi cancelada, então não dá para sortear os times.')
+                    : __('Esta partida já foi finalizada, então não dá para sortear os times de novo.'),
+            ]);
+        }
 
         $teamsCount = (int) $request->validated('teams_count');
+        $confirmedCount = $game->confirmedPlayersCount();
 
-        $confirmedPlayers = $game->gamePlayers()->where('status', GamePlayer::STATUS_CONFIRMED)->get();
-
-        if ($confirmedPlayers->isEmpty()) {
-            return redirect()
-                ->route('games.show', ['game' => $game, 'tab' => 'times'])
+        if ($confirmedCount === 0) {
+            return $this->backToTeams($game)
                 ->withErrors(['teams_count' => __('Não há jogadores confirmados para sortear times.')]);
         }
 
-        DB::transaction(function () use ($game, $teamsCount, $confirmedPlayers) {
-            GamePlayer::where('game_id', $game->id)->update(['game_team_id' => null]);
-            GameTeam::where('game_id', $game->id)->delete();
+        // Asked for more teams than there are people: drawing anyway would
+        // hand back empty teams, which is never what was meant.
+        if ($teamsCount > $confirmedCount) {
+            return $this->backToTeams($game)->withErrors([
+                'teams_count' => __('Só há :count jogadores confirmados — não dá para formar :teams times.', [
+                    'count' => $confirmedCount,
+                    'teams' => $teamsCount,
+                ]),
+            ]);
+        }
 
-            $teams = collect(range(1, $teamsCount))->map(fn (int $number) => GameTeam::create([
-                'game_id' => $game->id,
-                'name' => __('Time :number', ['number' => $number]),
-            ]));
+        $teams->draw($game, $teamsCount, $request->validated('mode'));
 
-            $confirmedPlayers->shuffle()->values()->each(function (GamePlayer $gamePlayer, int $index) use ($teams, $teamsCount) {
-                $gamePlayer->update(['game_team_id' => $teams[$index % $teamsCount]->id]);
-            });
-        });
+        return $this->backToTeams($game)->with('status', 'teams-drawn');
+    }
 
-        return redirect()->route('games.show', ['game' => $game, 'tab' => 'times'])->with('status', 'teams-drawn');
+    private function backToTeams(Game $game): RedirectResponse
+    {
+        return redirect()->route('games.show', ['game' => $game, 'tab' => 'times']);
     }
 }

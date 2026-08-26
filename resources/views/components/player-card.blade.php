@@ -17,26 +17,18 @@
         'Outros' => 'OUT',
     ];
 
-    $levelScores = [
-        'Iniciante' => 62,
-        'Recreativo' => 72,
-        'Intermediário' => 80,
-        'Avançado' => 88,
-    ];
-
     $user = $playerProfile->user;
     $primaryPosition = $playerProfile->positions[0] ?? null;
     $primaryModality = $playerProfile->modalities[0] ?? null;
 
-    $posLabel = $positionAbbreviations[$primaryPosition] ?? Str::upper(Str::limit($primaryPosition ?? '—', 3, ''));
-    $modLabel = $modalityAbbreviations[$primaryModality] ?? Str::upper(Str::limit($primaryModality ?? '—', 3, ''));
-    $levelScore = $levelScores[$playerProfile->level] ?? 70;
+    $posLabel = $positionAbbreviations[$primaryPosition] ?? Str::upper(Str::limit($primaryPosition ?? '-', 3, ''));
+    $modLabel = $modalityAbbreviations[$primaryModality] ?? Str::upper(Str::limit($primaryModality ?? '-', 3, ''));
+    // Mesma nota que o sorteio equilibrado usa, para o card e os times
+    // nunca contarem histórias diferentes sobre o mesmo jogador.
+    $levelScore = \App\Models\PlayerProfile::LEVEL_SCORES[$playerProfile->level] ?? \App\Models\PlayerProfile::DEFAULT_SCORE;
+    $overall = $playerProfile->overallScore();
 
     $toScore = fn (?string $average) => $average !== null ? max(1, min(99, (int) round($average * 20))) : null;
-
-    $overall = $playerProfile->ratings_count > 0
-        ? max(1, min(99, (int) round($playerProfile->average_rating * 20)))
-        : $levelScore;
 
     $stats = [
         ['label' => __('PON'), 'value' => $toScore($playerProfile->average_punctuality)],
@@ -80,7 +72,7 @@
 
             {{-- State + modality badges --}}
             <div class="absolute top-[29%] left-[8%] flex flex-col gap-2">
-                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-400/10 border border-amber-400/50 text-[11px] font-bold text-amber-200">{{ $playerProfile->state ?? '—' }}</span>
+                <span class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-400/10 border border-amber-400/50 text-[11px] font-bold text-amber-200">{{ $playerProfile->state ?? '-' }}</span>
                 <span class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-400/10 border border-amber-400/50 text-[10px] font-bold text-amber-200">{{ $modLabel }}</span>
             </div>
 

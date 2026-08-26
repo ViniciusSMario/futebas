@@ -59,7 +59,7 @@
                                 <option value="">{{ __('Selecione...') }}</option>
                                 @foreach ($games as $game)
                                     <option value="{{ $game->id }}" @selected((int) old('game_id') === $game->id)>
-                                        {{ $game->date->format('d/m') }} {{ $game->start_time->format('H:i') }} — {{ $game->team_name }} ({{ $game->location }}, {{ $game->city }})
+                                        {{ $game->date->format('d/m') }} {{ $game->start_time->format('H:i') }} - {{ $game->team_name }} ({{ $game->location }}, {{ $game->city }})
                                     </option>
                                 @endforeach
                             </select>

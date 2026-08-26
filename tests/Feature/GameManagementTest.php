@@ -77,6 +77,17 @@ class GameManagementTest extends TestCase
             'joined_at' => now(),
         ]);
 
+        // A second confirmed player, so asking for two teams is a request
+        // that can actually be honoured.
+        GamePlayer::create([
+            'game_id' => $game->id,
+            'user_id' => User::factory()->create()->id,
+            'status' => GamePlayer::STATUS_CONFIRMED,
+            'payment_status' => GamePlayer::PAYMENT_PENDING,
+            'amount_due' => $game->price,
+            'joined_at' => now(),
+        ]);
+
         $waitingPlayer = User::factory()->create();
         GamePlayer::create([
             'game_id' => $game->id,

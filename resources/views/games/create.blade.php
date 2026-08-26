@@ -136,7 +136,7 @@
                             <x-input-label for="price" :value="__('Valor estimado por jogador (R$)')" />
                             <x-text-input id="price" name="price" type="number" step="0.01" min="0" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('price')" required />
                             <x-input-error class="mt-2" :messages="$errors->get('price')" />
-                            <p class="mt-1 text-xs text-pitch-500">{{ __('É só uma referência para organizar o financeiro — não é uma cobrança automática.') }}</p>
+                            <p class="mt-1 text-xs text-pitch-500">{{ __('É só uma referência para organizar o financeiro, não é uma cobrança automática.') }}</p>
                         </div>
                     </section>
 

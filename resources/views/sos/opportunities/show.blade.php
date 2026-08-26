@@ -41,7 +41,7 @@
 
                 <div class="mt-4 pt-4 border-t border-white/20 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                     <span class="font-bold text-base">R$ {{ number_format((float) $sosRequest->offered_value, 2, ',', '.') }}</span>
-                    <span class="text-red-50">⚽ {{ $game->modality }}</span>
+                    <span class="text-red-50"> {{ $game->modality }}</span>
                     <span class="text-red-50">{{ __('Organizador') }}: {{ $sosRequest->organizer->name }}</span>
                 </div>
 

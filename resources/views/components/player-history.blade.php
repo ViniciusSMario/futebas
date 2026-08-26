@@ -28,7 +28,7 @@
             <x-stat-card
                 icon="heroicon-o-hand-raised"
                 :label="__('Presença')"
-                :value="$rate === null ? '—' : number_format((float) $rate, 0, ',', '.').'%'"
+                :value="$rate === null ? '-' : number_format((float) $rate, 0, ',', '.').'%'"
                 :color="$rateColor"
             />
             <x-stat-card icon="heroicon-o-user-minus" :label="__('Faltas')" :value="$playerProfile->no_shows" :color="$playerProfile->no_shows > 0 ? 'red' : 'gray'" />

@@ -7,7 +7,7 @@
     <div x-data="{ role: @js($forcePlayerRole ? 'player' : old('role')) }">
         @isset($intendedGame)
             <div class="max-w-md mx-auto mb-6 flex items-center gap-2 rounded-xl bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
-                <span class="text-lg">⚽</span>
+                <span class="text-lg"></span>
                 {{ __('Crie sua conta de jogador para entrar em ":name".', ['name' => $intendedGame->team_name]) }}
             </div>
         @endisset

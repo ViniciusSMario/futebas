@@ -123,4 +123,41 @@ new MutationObserver((mutations) => {
     });
 }).observe(document.body, { childList: true, subtree: true });
 
+/**
+ * Scroll reveal. Any element carrying `.reveal` fades/slides in the first
+ * time it enters the viewport; `data-delay="1..6"` staggers a group.
+ * Lives here rather than in a per-page <script> so the landing page and
+ * the authenticated app share one implementation.
+ */
+function initScrollReveal() {
+    const elements = document.querySelectorAll('.reveal:not(.is-visible)');
+
+    if (!elements.length) {
+        return;
+    }
+
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReduced || !('IntersectionObserver' in window)) {
+        elements.forEach((element) => element.classList.add('is-visible'));
+        return;
+    }
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        { rootMargin: '0px 0px -8% 0px', threshold: 0.12 }
+    );
+
+    elements.forEach((element) => observer.observe(element));
+}
+
+initScrollReveal();
+
 Alpine.start();

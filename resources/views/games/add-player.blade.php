@@ -84,7 +84,7 @@
                 <h3 class="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-pitch-400 mb-1">
                     <x-heroicon-o-identification class="w-4 h-4" /> {{ __('Não tem conta no Futebas?') }}
                 </h3>
-                <p class="text-xs text-pitch-500 mb-4">{{ __('Cadastre um contato novo — ele fica salvo para você adicionar em outros Games sem precisar digitar tudo de novo.') }}</p>
+                <p class="text-xs text-pitch-500 mb-4">{{ __('Cadastre um contato novo, ele fica salvo para você adicionar em outros Games sem precisar digitar tudo de novo.') }}</p>
 
                 <form method="post" action="{{ route('game-players.store', $game) }}" class="space-y-4">
                     @csrf

@@ -22,7 +22,7 @@ class PushTestNotification extends Notification
 
     public function toWebPush(object $notifiable): PushMessage
     {
-        return PushMessage::make('⚽ '.__('Notificações ativadas'))
+        return PushMessage::make(' '.__('Notificações ativadas'))
             ->body(__('Você vai receber os SOS de goleiro da sua região por aqui.'))
             ->url(route('dashboard'))
             ->tag('push-test');

@@ -45,7 +45,7 @@ class InvitationReceived extends Notification implements ShouldQueue
 
     public function toWebPush(object $notifiable): PushMessage
     {
-        return PushMessage::make('⚽ '.__('Convite para jogar'))
+        return PushMessage::make(' '.__('Convite para jogar'))
             ->body($this->summary())
             ->url(route('invitations.index'))
             ->tag('invitation-'.$this->invitation->id)

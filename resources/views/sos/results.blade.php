@@ -68,7 +68,7 @@
 
                             <div class="mt-4 flex flex-wrap gap-1.5">
                                 <x-badge color="emerald">🧤 {{ __('Goleiro') }}</x-badge>
-                                <x-badge color="blue">⚽ {{ $game->modality }}</x-badge>
+                                <x-badge color="blue"> {{ $game->modality }}</x-badge>
                             </div>
 
                             <div class="mt-4 pt-4 border-t border-pitch-800 grow">
