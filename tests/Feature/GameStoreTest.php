@@ -24,6 +24,7 @@ class GameStoreTest extends TestCase
             'end_time' => '20:00',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'price' => '25.00',
             'max_players' => 20,
             'positions' => ['Goleiro', 'Zagueiro'],

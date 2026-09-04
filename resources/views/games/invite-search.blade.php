@@ -31,10 +31,7 @@
                         </select>
                     </div>
 
-                    <div>
-                        <x-input-label for="city" :value="__('Cidade')" />
-                        <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="$filters['city'] ?? ''" placeholder="{{ __('Ex: São Paulo') }}" />
-                    </div>
+                    <x-city-select any :state="$filters['state'] ?? ''" :city="$filters['city'] ?? ''" />
 
                     <div>
                         <x-input-label for="level" :value="__('Nível')" />

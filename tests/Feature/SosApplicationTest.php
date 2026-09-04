@@ -44,6 +44,7 @@ class SosApplicationTest extends TestCase
             'team_name' => 'Pelada da quinta',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '19:00',

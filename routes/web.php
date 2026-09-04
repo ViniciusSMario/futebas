@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\CityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\GamePlayerController;
@@ -16,11 +17,17 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\SosController;
 use App\Http\Controllers\SosOpportunityController;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
+
+// Municípios de um estado, para o select de cidade. Pública: o cadastro
+// precisa dela antes de existir conta.
+Route::get('/cidades/{uf}', [CityController::class, 'index'])->name('cities.index');
 
 // Public game link — no authentication required, so a Game's organizer can
 // share it with anyone (WhatsApp, Instagram, etc).
@@ -31,10 +38,25 @@ Route::post('/g/{game:slug}/participar-sem-cadastro', [PublicGameController::cla
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
+// O Stripe avisando o que aconteceu com uma assinatura. Sem sessão e sem
+// CSRF (dispensado em bootstrap/app.php): a prova de origem é a assinatura
+// HMAC do corpo, conferida no controller.
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
+
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Planos e assinatura. Não entram em nenhum grupo de papel: jogador e
+    // organizador assinam o mesmo catálogo, cada um esbarrando nos limites
+    // que fazem sentido para o seu lado.
+    Route::get('/planos', [SubscriptionController::class, 'index'])->name('subscription.index');
+    Route::post('/planos/{plan}/assinar', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('/planos/obrigado', [SubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/planos/gerenciar', [SubscriptionController::class, 'portal'])->name('subscription.portal');
+    // Só responde em ambiente local e sem cobrança configurada.
+    Route::post('/planos/{plan}/simular', [SubscriptionController::class, 'simulate'])->name('subscription.simulate');
 
     // Push notifications are per-device and role-agnostic: the service
     // worker registers on any authenticated page.

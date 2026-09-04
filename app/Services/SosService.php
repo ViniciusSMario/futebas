@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\Feature;
+use App\Exceptions\PlanLimitReachedException;
 use App\Exceptions\SosRequestUnavailableException;
 use App\Models\Game;
 use App\Models\GamePlayer;
@@ -10,6 +12,7 @@ use App\Models\SosApplication;
 use App\Models\SosRequest;
 use App\Models\User;
 use App\Notifications\SosApplicationAccepted;
+use App\Notifications\SosApplicationCancelled;
 use App\Notifications\SosApplicationReceived;
 use App\Notifications\SosApplicationRejected;
 use App\Notifications\SosRequestPublished;
@@ -30,16 +33,28 @@ use Illuminate\Support\Facades\Notification;
  */
 class SosService
 {
-    public function __construct(private readonly GamePlayerService $gamePlayers) {}
+    public function __construct(
+        private readonly GamePlayerService $gamePlayers,
+        private readonly PlanService $plans,
+    ) {}
 
     /**
      * Publish an SOS for a match and notify matching goalkeepers.
      *
      * The deadline defaults to kickoff: a call for a goalkeeper is
      * pointless once the match has started.
+     *
+     * @throws PlanLimitReachedException quando o plano do organizador
+     *                                   já esgotou os SOS do mês.
      */
     public function publish(Game $game, User $organizer, float $offeredValue, ?string $message = null): SosRequest
     {
+        // O teto do plano é conferido aqui, e não só no controller, porque
+        // publicar um SOS avisa a região inteira na hora: qualquer caminho
+        // que chegue ao serviço passa pela mesma porta. É o mesmo motivo de
+        // "só goleiro se candidata" morar em apply().
+        $this->plans->ensureQuota($organizer, Feature::SOS_REQUESTS);
+
         $sosRequest = SosRequest::create([
             'game_id' => $game->id,
             'organizer_id' => $organizer->id,
@@ -67,26 +82,28 @@ class SosService
      * play the match's modality, and they are in range.
      *
      * "In range" is the match's own city, plus players who declared they
-     * travel and live in the organizer's state — a Game records only a
-     * city, so the organizer's state is the best available proxy.
+     * travel and live in the match's state — the match's own state, now
+     * that a Game records the pair. This used to fall back to the
+     * organizer's state as a proxy, which was wrong exactly when someone
+     * organised a match away from home.
      *
      * @return Collection<int, User>
      */
     public function candidatesInRegion(SosRequest $sosRequest): Collection
     {
         $game = $sosRequest->game;
-        $organizerState = $sosRequest->organizer?->state ?? $game->user?->state;
+        $gameState = $game->state;
 
         $userIds = PlayerProfile::query()
             ->whereJsonContains('positions', $sosRequest->position)
             ->whereJsonContains('modalities', $game->modality)
-            ->where(function ($query) use ($game, $organizerState) {
+            ->where(function ($query) use ($game, $gameState) {
                 $query->where('city', $game->city);
 
-                if (filled($organizerState)) {
+                if (filled($gameState)) {
                     $query->orWhere(fn ($q) => $q
                         ->where('plays_outside_city', true)
-                        ->where('state', $organizerState));
+                        ->where('state', $gameState));
                 }
             })
             ->pluck('user_id');
@@ -107,6 +124,9 @@ class SosService
      *
      * Candidacies are always pending: the organizer decides, so applying
      * never puts anyone in the match.
+     *
+     * @throws PlanLimitReachedException quando o plano do goleiro já
+     *                                   esgotou as candidaturas do mês.
      */
     public function apply(SosRequest $sosRequest, User $user, float $askingPrice, ?string $message = null): SosApplication
     {
@@ -122,6 +142,14 @@ class SosService
         // enforced here, at the moment it actually matters.
         if ($sosRequest->game?->hasParticipant($user)) {
             throw SosRequestUnavailableException::alreadyInGame();
+        }
+
+        // Rever o preço pedido reaproveita a mesma linha (o updateOrCreate
+        // abaixo), então só a primeira candidatura a esta chamada gasta uma
+        // vaga do mês — mudar de ideia sobre o valor não é uma candidatura
+        // nova.
+        if (! $sosRequest->applications()->where('user_id', $user->id)->exists()) {
+            $this->plans->ensureQuota($user, Feature::SOS_APPLICATIONS);
         }
 
         $application = DB::transaction(function () use ($sosRequest, $user, $askingPrice, $message) {
@@ -238,8 +266,12 @@ class SosService
 
     /**
      * Call the whole thing off; every candidate still waiting is told.
+     *
+     * `$matchCancelled` distingue as duas formas de acabar sem vencedor: o
+     * organizador desistir da chamada, ou a partida inteira cair. Para
+     * quem reservou a noite, não é a mesma notícia.
      */
-    public function cancel(SosRequest $sosRequest): SosRequest
+    public function cancel(SosRequest $sosRequest, bool $matchCancelled = false): SosRequest
     {
         $pending = DB::transaction(function () use ($sosRequest) {
             $locked = $this->lockOpenRequest($sosRequest);
@@ -259,7 +291,7 @@ class SosService
         $sosRequest->status = SosRequest::STATUS_CANCELLED;
 
         foreach ($pending as $application) {
-            $application->user->notify(new SosApplicationRejected($application));
+            $application->user?->notify(new SosApplicationCancelled($application, $matchCancelled));
         }
 
         return $sosRequest;

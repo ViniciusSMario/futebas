@@ -38,33 +38,61 @@ document.addEventListener('input', (event) => {
 });
 
 /**
- * Cascading state -> city selects, populated from IBGE's public API.
- * The state <select> carries `data-state-select="<city-select-id>"`;
- * the city <select> may carry `data-selected="<current value>"` to
- * preselect once its options load (used when editing existing data).
+ * Cascading state -> city selects.
+ *
+ * The list comes from the app itself (`/cidades/{uf}`), not from IBGE's
+ * API: the data ships with the project so a flaky connection can't turn
+ * "cidade" into a dead field, and so the server can validate what comes
+ * back. Responses are cached per UF for the life of the page, on top of
+ * the long Cache-Control the endpoint already sends.
+ *
+ * The state <select> carries `data-state-select="<city-select-id>"`; the
+ * city <select> may carry `data-selected="<current value>"` to preselect
+ * once its options load (used when editing existing data).
  *
  * Wired via delegation (for the `change` event) plus a MutationObserver
  * (to auto-load cities for a pre-filled state as soon as the pair of
  * selects appears in the DOM), so it works even when the fields live
  * inside an Alpine `x-if` template that isn't rendered at page load.
  */
+const cityCache = new Map();
+
+function fetchCities(uf) {
+    if (!cityCache.has(uf)) {
+        cityCache.set(
+            uf,
+            fetch(`/cidades/${uf}`, { headers: { Accept: 'application/json' } })
+                .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+                .catch((error) => {
+                    // Uma falha não pode virar cache: a próxima tentativa
+                    // precisa poder dar certo.
+                    cityCache.delete(uf);
+                    return Promise.reject(error);
+                }),
+        );
+    }
+
+    return cityCache.get(uf);
+}
+
 function loadCitiesInto(citySelect, uf, selectedCity) {
     if (!uf) {
         citySelect.innerHTML = '<option value="">Selecione o estado primeiro</option>';
         return;
     }
 
+    const placeholder = citySelect.dataset.placeholder || 'Selecione...';
+
     citySelect.innerHTML = '<option value="">Carregando...</option>';
 
-    fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`)
-        .then((response) => response.json())
+    fetchCities(uf)
         .then((cities) => {
-            citySelect.innerHTML = '<option value="">Selecione...</option>';
+            citySelect.innerHTML = `<option value="">${placeholder}</option>`;
             cities.forEach((city) => {
                 const option = document.createElement('option');
-                option.value = city.nome;
-                option.textContent = city.nome;
-                if (selectedCity && selectedCity === city.nome) {
+                option.value = city;
+                option.textContent = city;
+                if (selectedCity && selectedCity === city) {
                     option.selected = true;
                 }
                 citySelect.appendChild(option);
@@ -102,6 +130,14 @@ function initStateSelectIfPrefilled(stateSelect) {
     }
 
     initializedStateSelects.add(stateSelect);
+
+    // Quando o servidor já mandou as opções da UF escolhida — o caso do
+    // componente <x-city-select> — não há nada a buscar: a lista já está
+    // na página, com a cidade atual selecionada.
+    if (citySelect.options.length > 1) {
+        return;
+    }
+
     loadCitiesInto(citySelect, stateSelect.value, citySelect.dataset.selected || null);
 }
 

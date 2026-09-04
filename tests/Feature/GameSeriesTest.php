@@ -43,6 +43,7 @@ class GameSeriesTest extends TestCase
             'team_name' => 'Pelada de Quinta',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'day_of_week' => 4, // Thursday
             'start_time' => '19:00',
@@ -66,6 +67,7 @@ class GameSeriesTest extends TestCase
             'end_time' => '20:00',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'max_players' => 14,
             'price' => '25.00',
         ], $overrides);
@@ -389,6 +391,7 @@ class GameSeriesTest extends TestCase
             'end_time' => '20:00',
             'location' => 'Quadra Avulsa',
             'city' => 'Teresina',
+            'state' => 'PI',
             'max_players' => 10,
             'price' => '20.00',
         ])->assertRedirect();

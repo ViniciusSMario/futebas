@@ -120,6 +120,18 @@
                 @endforeach
 
                 <a
+                    href="{{ route('subscription.index') }}"
+                    @click="moreOpen = false"
+                    class="flex items-center gap-3 rounded-xl px-3 min-h-[52px] text-base font-semibold transition {{ request()->routeIs('subscription.*') ? 'bg-emerald-500/10 text-emerald-300' : 'text-pitch-200 active:bg-pitch-800' }}"
+                >
+                    <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-pitch-800 text-pitch-300 shrink-0">
+                        <x-heroicon-o-sparkles class="w-5 h-5" />
+                    </span>
+                    <span class="flex-1">{{ __('Meu plano') }}</span>
+                    <x-plan-badge :plan="Auth::user()->currentPlan()" />
+                </a>
+
+                <a
                     href="{{ route('notifications.index') }}"
                     @click="moreOpen = false"
                     class="flex items-center gap-3 rounded-xl px-3 min-h-[52px] text-base font-semibold transition {{ request()->routeIs('notifications.*') ? 'bg-emerald-500/10 text-emerald-300' : 'text-pitch-200 active:bg-pitch-800' }}"

@@ -33,6 +33,7 @@ class GamePlayer extends Model
             'cancelled_at' => 'datetime',
             'checked_in_at' => 'datetime',
             'no_show' => 'boolean',
+            'payment_reminded_at' => 'datetime',
         ];
     }
 

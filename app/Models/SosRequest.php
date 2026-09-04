@@ -42,6 +42,7 @@ class SosRequest extends Model
             'offered_value' => 'decimal:2',
             'notified_count' => 'integer',
             'expires_at' => 'datetime',
+            'expiry_notified_at' => 'datetime',
         ];
     }
 
@@ -85,6 +86,21 @@ class SosRequest extends Model
     public function isFilled(): bool
     {
         return $this->status === self::STATUS_FILLED;
+    }
+
+    /**
+     * O prazo passou sem ninguém decidir nada.
+     *
+     * Diferente de `! isOpen()`, que também é verdade para chamada
+     * preenchida ou cancelada: aqui é especificamente o caso em que a
+     * chamada morreu de velha, que é o único que não avisa ninguém
+     * sozinho.
+     */
+    public function hasExpired(): bool
+    {
+        return $this->status === self::STATUS_OPEN
+            && $this->expires_at !== null
+            && $this->expires_at->isPast();
     }
 
     /**

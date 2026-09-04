@@ -34,6 +34,7 @@ class SosTest extends TestCase
             'date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '19:00',
             'city' => 'Teresina',
+            'state' => 'PI',
             'location' => 'Arena Society Central',
             'modality' => 'Society',
             'offered_value' => '60.00',
@@ -75,6 +76,7 @@ class SosTest extends TestCase
             'team_name' => 'Pelada da quinta',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '19:00',
@@ -243,6 +245,7 @@ class SosTest extends TestCase
         $traveller = $this->goalkeeper([
             'name' => 'Viajante',
             'city' => 'Parnaíba',
+            'state' => 'PI',
             'plays_outside_city' => true,
         ]);
 

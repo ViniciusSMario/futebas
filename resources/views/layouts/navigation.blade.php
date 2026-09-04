@@ -87,6 +87,12 @@
             </x-sidebar-link>
         @endif
 
+        {{-- Plano fica junto do perfil: é uma configuração da conta, não
+             uma seção do produto. --}}
+        <x-sidebar-link :href="route('subscription.index')" :active="request()->routeIs('subscription.*')" icon="heroicon-o-sparkles">
+            {{ __('Meu plano') }}
+        </x-sidebar-link>
+
         <x-sidebar-link
             :href="route('notifications.index')"
             :active="request()->routeIs('notifications.*')"

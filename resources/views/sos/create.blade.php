@@ -5,6 +5,17 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            @if (session('error'))
+                <p class="mb-5 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 flex items-start gap-2">
+                    <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" /> {{ session('error') }}
+                </p>
+            @endif
+
+            {{-- Quanto ainda cabe no plano deste mês. Aparece antes do
+                 formulário porque descobrir que acabou depois de preencher
+                 tudo é a pior hora de descobrir. --}}
+            <x-quota-notice :feature="\App\Enums\Feature::SOS_REQUESTS" class="mb-5" />
+
             <form
                 method="post"
                 action="{{ route('sos.store') }}"
@@ -101,11 +112,13 @@
                                     <x-input-error class="mt-2" :messages="$errors->get('location')" />
                                 </div>
 
-                                <div>
-                                    <x-input-label for="city" :value="__('Cidade')" />
-                                    <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg" :value="old('city')" />
-                                    <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                                </div>
+                                {{-- Estado e cidade do IBGE. O SOS depende disso mais
+                                     que qualquer outra tela: é por cidade e estado que
+                                     ele decide quais goleiros avisar. --}}
+                                <x-city-select
+                                    :state="old('state', Auth::user()->state)"
+                                    :city="old('city')"
+                                />
                             </div>
 
                             <div>

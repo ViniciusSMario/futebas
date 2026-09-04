@@ -11,6 +11,8 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+            <x-quota-notice :feature="\App\Enums\Feature::SOS_REQUESTS" />
+
             @if ($sosRequests->isEmpty())
                 <x-empty-state icon="heroicon-o-megaphone" :title="__('Nenhum SOS publicado')" :description="__('Publique uma chamada e avisamos na hora todos os goleiros cadastrados na região da partida.')">
                     <x-slot name="action">

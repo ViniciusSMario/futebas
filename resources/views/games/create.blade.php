@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header icon="heroicon-o-plus-circle" :title="__('Criar Game')" :subtitle="__('Organize uma partida e controle os participantes')" />
+        <x-page-header icon="heroicon-o-plus-circle" :title="__('Criar Partida')" :subtitle="__('Organize uma partida e controle os participantes')" />
     </x-slot>
 
     @php
@@ -76,11 +76,14 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('location')" />
                             </div>
 
-                            <div>
-                                <x-input-label for="city" :value="__('Cidade')" />
-                                <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('city')" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                            </div>
+                            {{-- Estado e cidade vêm do IBGE: cidade escrita à mão
+                                 vira "Terezina" e some da busca de quem procura
+                                 por Teresina. Começa na UF de quem organiza. --}}
+                            <x-city-select
+                                :state="old('state', Auth::user()->state)"
+                                :city="old('city', Auth::user()->city)"
+                                required
+                            />
                         </div>
                     </section>
 
@@ -142,7 +145,7 @@
 
                     <div class="flex items-center gap-4 sticky bottom-4 sm:static">
                         <button type="submit" class="inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition">
-                            {{ __('Criar Game') }}
+                            {{ __('Criar Partida') }}
                         </button>
                     </div>
                 </div>

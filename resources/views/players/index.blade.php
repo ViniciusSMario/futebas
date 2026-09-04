@@ -32,10 +32,23 @@
                         </select>
                     </div>
 
-                    <div>
-                        <x-input-label for="city" :value="__('Cidade')" />
-                        <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="$filters['city'] ?? ''" placeholder="{{ __('Ex: São Paulo') }}" />
-                    </div>
+                    <x-city-select any :state="$filters['state'] ?? ''" :city="$filters['city'] ?? ''">
+                        {{-- Cidades próximas é recurso de plano. Para quem não
+                             tem, o controle continua visível, desligado e
+                             explicado: esconder deixaria a pessoa procurando
+                             algo que existe. --}}
+                        @if ($canUseNearby)
+                            <label class="mt-2 flex items-center gap-2 text-xs text-pitch-300 cursor-pointer">
+                                <input type="checkbox" name="nearby" value="1" @checked(! empty($filters['nearby'])) class="rounded border-pitch-600 bg-pitch-800 text-emerald-500 focus:ring-emerald-500">
+                                {{ __('Incluir cidades próximas') }}
+                            </label>
+                        @elseif ($nearbyPlan)
+                            <a href="{{ route('subscription.index') }}" class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-pitch-400 hover:text-emerald-300 transition">
+                                <x-heroicon-o-lock-closed class="w-3.5 h-3.5" />
+                                {{ __('Cidades próximas: no plano :plan', ['plan' => $nearbyPlan->label()]) }}
+                            </a>
+                        @endif
+                    </x-city-select>
 
                     <div>
                         <x-input-label for="level" :value="__('Nível')" />
@@ -105,7 +118,19 @@
                                 @endif
 
                                 <div class="min-w-0">
-                                    <h3 class="font-bold text-white truncate">{{ $playerProfile->user->name }}</h3>
+                                    @php
+                                        // O plano vem junto do resultado da busca
+                                        // (subconsulta em PlayerController::search),
+                                        // para este selo e para a ordenação por destaque.
+                                        $playerPlan = \App\Enums\Plan::tryFrom((string) $playerProfile->plan);
+                                    @endphp
+
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-white truncate">{{ $playerProfile->user->name }}</h3>
+                                        @if ($playerPlan)
+                                            <x-plan-badge :plan="$playerPlan" class="shrink-0" />
+                                        @endif
+                                    </div>
                                     <p class="text-xs text-pitch-400 truncate flex items-center gap-1">
                                         <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" /> {{ $playerProfile->city }}@if ($playerProfile->state), {{ $playerProfile->state }}@endif
                                     </p>

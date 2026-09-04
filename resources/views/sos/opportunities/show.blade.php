@@ -22,6 +22,10 @@
                 </p>
             @endif
 
+            {{-- O limite de candidaturas do mês, para o goleiro saber onde
+                 está antes de mandar mais uma. --}}
+            <x-quota-notice :feature="\App\Enums\Feature::SOS_APPLICATIONS" />
+
             @if (session('status') === 'sos-applied')
                 <p class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-medium text-emerald-300 flex items-start gap-2">
                     <x-heroicon-o-check-circle class="w-5 h-5 shrink-0" /> {{ __('Candidatura enviada! O organizador vai comparar as propostas e avisamos você da decisão.') }}

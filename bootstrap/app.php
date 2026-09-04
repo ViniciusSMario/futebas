@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsurePlanAllows;
 use App\Http\Middleware\EnsureUserHasRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -13,7 +14,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias(['role' => EnsureUserHasRole::class]);
+        $middleware->alias([
+            'role' => EnsureUserHasRole::class,
+            'plan' => EnsurePlanAllows::class,
+        ]);
+
+        // O webhook do Stripe é uma chamada servidor a servidor: não tem
+        // sessão e nem como carregar um token. Quem prova que é legítimo é
+        // a assinatura HMAC do corpo, conferida no controller.
+        $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

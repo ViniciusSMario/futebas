@@ -42,6 +42,7 @@ class SosAlreadyInGameTest extends TestCase
             'team_name' => 'Furacão FC',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDays(3)->format('Y-m-d'),
             'start_time' => '19:00',

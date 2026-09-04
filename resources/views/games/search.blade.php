@@ -16,10 +16,7 @@
                         <x-text-input id="q" name="q" type="search" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="$filters['q'] ?? ''" placeholder="{{ __('Time, quadra ou cidade') }}" />
                     </div>
 
-                    <div>
-                        <x-input-label for="city" :value="__('Cidade')" />
-                        <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="$filters['city'] ?? ''" placeholder="{{ __('Ex: Teresina') }}" />
-                    </div>
+                    <x-city-select any :state="$filters['state'] ?? ''" :city="$filters['city'] ?? ''" />
 
                     <div>
                         <x-input-label for="modality" :value="__('Modalidade')" />

@@ -28,6 +28,7 @@ class WaitingListPromotionTest extends TestCase
             'team_name' => 'Furacão FC',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDays(3)->format('Y-m-d'),
             'start_time' => '19:00',
@@ -131,6 +132,7 @@ class WaitingListPromotionTest extends TestCase
             'end_time' => '20:00',
             'location' => $game->location,
             'city' => $game->city,
+            'state' => $game->state,
             'max_players' => 3,
             'price' => (string) $game->price,
         ])->assertRedirect();

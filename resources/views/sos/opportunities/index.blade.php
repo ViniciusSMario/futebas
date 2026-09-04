@@ -31,6 +31,8 @@
                     </x-slot>
                 </x-empty-state>
             @else
+                <x-quota-notice :feature="\App\Enums\Feature::SOS_APPLICATIONS" />
+
                 <x-push-toggle />
 
                 <section>

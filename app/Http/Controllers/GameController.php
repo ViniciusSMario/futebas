@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\SosRequestUnavailableException;
 use App\Http\Requests\GameStoreRequest;
 use App\Http\Requests\GameUpdateRequest;
 use App\Models\Game;
 use App\Models\GamePlayer;
 use App\Models\Invitation;
 use App\Models\Rating;
+use App\Models\SosRequest;
 use App\Notifications\GameCancelled;
 use App\Notifications\GameUpdated;
 use App\Services\GamePlayerService;
+use App\Services\SosService;
 use App\Services\TeamDrawService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,7 +40,7 @@ class GameController extends Controller
         'week' => 'Próximos 7 dias',
     ];
 
-    private const SEARCH_FILTERS = ['q', 'city', 'modality', 'position', 'period', 'max_price', 'with_spots'];
+    private const SEARCH_FILTERS = ['q', 'state', 'city', 'modality', 'position', 'period', 'max_price', 'with_spots'];
 
     /**
      * Search open matches the authenticated user could still join — the
@@ -83,8 +86,15 @@ class GameController extends Controller
             );
         }
 
+        if ($request->filled('state')) {
+            $query->where('state', $request->string('state')->upper()->toString());
+        }
+
+        // Comparação exata: a cidade vem de um select do catálogo do IBGE,
+        // e um 'like' faria "Bom Jesus" trazer também "Bom Jesus da Lapa".
+        // Quem quer buscar por pedaço de nome tem o campo de texto acima.
         if ($request->filled('city')) {
-            $query->where('city', 'like', '%'.$request->string('city')->toString().'%');
+            $query->where('city', $request->string('city')->toString());
         }
 
         if ($request->filled('modality')) {
@@ -345,10 +355,17 @@ class GameController extends Controller
     /**
      * Cancel an open game.
      */
-    public function cancel(Request $request, Game $game): RedirectResponse
+    public function cancel(Request $request, Game $game, SosService $sos): RedirectResponse
     {
         abort_unless($game->user_id === $request->user()->id, 403);
         abort_unless($game->isOpen(), 403);
+
+        // Antes de cancelar a partida, e a ordem não é estilo: uma chamada de
+        // SOS só pode ser cancelada enquanto está aberta, e
+        // `SosRequest::isOpen()` pergunta à partida. Invertido, o serviço
+        // recusaria o cancelamento e os goleiros ficariam esperando resposta
+        // de uma partida que não existe mais.
+        $this->cancelLiveSosRequests($game, $sos);
 
         $game->cancel();
 
@@ -370,6 +387,26 @@ class GameController extends Controller
     }
 
     /**
+     * Encerra as chamadas de goleiro que ainda estavam de pé.
+     *
+     * Sem isto, o único fim possível para elas era o prazo vencer — e o
+     * goleiro que reservou a noite só descobriria horas depois, pelo
+     * `sos:notify-expired`, que a partida tinha caído antes.
+     */
+    private function cancelLiveSosRequests(Game $game, SosService $sos): void
+    {
+        $game->sosRequests()->live()->get()->each(function (SosRequest $sosRequest) use ($sos) {
+            try {
+                $sos->cancel($sosRequest, matchCancelled: true);
+            } catch (SosRequestUnavailableException) {
+                // Alguém escolheu um goleiro neste exato instante: ele já
+                // entrou na partida e vai ser avisado do cancelamento como
+                // participante, junto com todo mundo.
+            }
+        });
+    }
+
+    /**
      * Mark an open match as finished once its scheduled end time has
      * passed, making it eligible for the organizer to rate players.
      */
@@ -378,11 +415,7 @@ class GameController extends Controller
         abort_unless($game->user_id === $request->user()->id, 403);
         abort_unless($game->isEligibleToFinish(), 403);
 
-        $game->update(['status' => Game::STATUS_FINISHED]);
-
-        // The match only becomes part of anyone's record now that it's
-        // finished, so this is where attendance is settled.
-        $game->refreshParticipantStats();
+        $game->finish();
 
         return redirect()->route('games.mine')->with('status', 'game-finished');
     }

@@ -29,6 +29,7 @@ class GameFinishTest extends TestCase
             'team_name' => 'Amigos FC',
             'location' => 'Arena X',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->format('Y-m-d'),
             'start_time' => now()->subHours(3)->format('H:i'),

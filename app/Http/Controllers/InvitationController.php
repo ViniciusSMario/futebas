@@ -165,7 +165,7 @@ class InvitationController extends Controller
         return view('games.invite-search', [
             'game' => $game,
             'players' => PlayerController::search($request, $excludeUserIds),
-            'filters' => $request->only(['position', 'modality', 'city', 'level', 'availability', 'max_price', 'sort']),
+            'filters' => $request->only(['position', 'modality', 'state', 'city', 'level', 'availability', 'max_price', 'sort']),
         ]);
     }
 

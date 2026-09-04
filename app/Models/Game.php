@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'game_series_id', 'team_name', 'location', 'city', 'modality', 'date', 'start_time', 'end_time', 'max_players', 'price', 'positions', 'description', 'requires_approval', 'status'])]
+#[Fillable(['user_id', 'game_series_id', 'team_name', 'location', 'city', 'state', 'modality', 'date', 'start_time', 'end_time', 'max_players', 'price', 'positions', 'description', 'requires_approval', 'status'])]
 class Game extends Model
 {
     public const POSITIONS = PlayerProfile::POSITIONS;
@@ -33,6 +33,28 @@ class Game extends Model
      * at 7h that morning.
      */
     public const CHECK_IN_OPENS_HOURS_BEFORE = 12;
+
+    /**
+     * Folga entre o fim previsto e a finalização automática.
+     *
+     * Existe por dois motivos concretos. Partida atrasa, e fechar no
+     * minuto do fim previsto pegaria gente ainda em campo. E `finishesAt()`
+     * cai para o horário de *início* quando o organizador não informou o
+     * término — sem folga, essas partidas seriam finalizadas no apito
+     * inicial. Três horas cobrem a pelada mais longa com sobra.
+     */
+    public const AUTO_FINISH_GRACE_HOURS = 3;
+
+    /**
+     * Quantas horas antes do início cada lembrete sai.
+     *
+     * O da véspera casa de propósito com o corte de
+     * {@see self::isCancellableByPlayer()}: quem for desistir ainda
+     * consegue liberar a vaga a tempo de alguém pegar.
+     */
+    public const REMINDER_EARLY_HOURS = 24;
+
+    public const REMINDER_LATE_HOURS = 2;
 
     protected static function booted(): void
     {
@@ -57,6 +79,8 @@ class Game extends Model
             'price' => 'decimal:2',
             'positions' => 'array',
             'requires_approval' => 'boolean',
+            'reminded_24h_at' => 'datetime',
+            'reminded_2h_at' => 'datetime',
         ];
     }
 
@@ -124,6 +148,32 @@ class Game extends Model
             ->where('status', '!=', GamePlayer::STATUS_CANCELLED)
             ->where('user_id', '!=', $this->user_id)
             ->pluck('user_id');
+
+        return User::query()->whereIn('id', $userIds)->get();
+    }
+
+    /**
+     * Quem deve ser lembrado da partida: os confirmados com conta, mais o
+     * organizador.
+     *
+     * O organizador entra aqui — e é excluído de
+     * {@see self::notifiableParticipants()} — porque a regra de lá é "não
+     * avise ninguém sobre a própria ação". Um lembrete não é ação de
+     * ninguém: é o relógio, e o dono da pelada também esquece dela.
+     *
+     * Só confirmados: para quem está na lista de espera ou aguardando
+     * aprovação, "sua partida é amanhã" seria mentira.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    public function reminderRecipients(): EloquentCollection
+    {
+        $userIds = $this->gamePlayers()
+            ->whereNotNull('user_id')
+            ->where('status', GamePlayer::STATUS_CONFIRMED)
+            ->pluck('user_id')
+            ->push($this->user_id)
+            ->unique();
 
         return User::query()->whereIn('id', $userIds)->get();
     }
@@ -295,5 +345,52 @@ class Game extends Model
     public function isEligibleToFinish(): bool
     {
         return $this->status === 'open' && now()->greaterThanOrEqualTo($this->finishesAt());
+    }
+
+    /**
+     * Close the match: the one operation, wherever the decision came from.
+     *
+     * Lives on the model because there are now two callers — the organizer
+     * pressing "finalizar" and the `games:finish` routine — and a match
+     * finished by the clock has to become exactly the same thing as one
+     * finished by hand. Settling attendance here is the point: a match only
+     * enters anyone's record once it is finished.
+     */
+    public function finish(): void
+    {
+        $this->update(['status' => self::STATUS_FINISHED]);
+
+        $this->refreshParticipantStats();
+    }
+
+    /**
+     * Whether this match may be closed *without anyone asking* — the
+     * scheduled end plus {@see self::AUTO_FINISH_GRACE_HOURS}.
+     *
+     * Deliberately stricter than {@see self::isEligibleToFinish()}: the
+     * organizer pressing "finalizar" knows the match is over, while the
+     * clock only suspects it.
+     */
+    public function isEligibleToAutoFinish(): bool
+    {
+        return $this->status === self::STATUS_OPEN
+            && now()->greaterThanOrEqualTo($this->finishesAt()->addHours(self::AUTO_FINISH_GRACE_HOURS));
+    }
+
+    /**
+     * Matches the auto-finish routine needs to look at.
+     *
+     * Coarse on purpose: the exact moment is a date column plus a time
+     * column, and MySQL and SQLite spell that sum differently, so the cut
+     * is made in PHP by `isEligibleToAutoFinish()`. This only narrows the
+     * candidates to open matches that could already be over.
+     *
+     * @param  Builder<Game>  $query
+     * @return Builder<Game>
+     */
+    public function scopeAwaitingAutoFinish(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_OPEN)
+            ->whereDate('date', '<=', now()->toDateString());
     }
 }

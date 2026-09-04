@@ -7,6 +7,7 @@ use App\Models\Availability;
 use App\Models\Game;
 use App\Models\PlayerProfile;
 use App\Models\User;
+use App\Rules\CityInState;
 use App\Services\GamePlayerService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -102,7 +103,7 @@ class RegisteredUserController extends Controller
             'photo' => ['nullable', 'image', 'max:2048'],
             'birth_date' => ['required', 'date', 'before:today'],
             'state' => ['required', 'string', Rule::in(array_keys(PlayerProfile::STATES))],
-            'city' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255', new CityInState($request->input('state'))],
             'phone' => ['required', 'string', 'max:20'],
             'position_primary' => ['required', 'string', Rule::in(PlayerProfile::POSITIONS)],
             'positions_secondary' => ['array'],
@@ -166,7 +167,7 @@ class RegisteredUserController extends Controller
             'photo' => ['nullable', 'image', 'max:2048'],
             'phone' => ['required', 'string', 'max:20'],
             'state' => ['required', 'string', Rule::in(array_keys(PlayerProfile::STATES))],
-            'city' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255', new CityInState($request->input('state'))],
         ]);
 
         return User::create([

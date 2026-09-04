@@ -81,6 +81,10 @@
                                         {{ __('Minha Conta') }}
                                     </x-dropdown-link>
 
+                                    <x-dropdown-link :href="route('subscription.index')">
+                                        {{ __('Meu plano') }}
+                                    </x-dropdown-link>
+
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
 

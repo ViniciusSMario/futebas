@@ -74,11 +74,11 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('location')" />
                             </div>
 
-                            <div>
-                                <x-input-label for="city" :value="__('Cidade')" />
-                                <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('city', $game->city)" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                            </div>
+                            <x-city-select
+                                :state="old('state', $game->state ?? Auth::user()->state)"
+                                :city="old('city', $game->city)"
+                                required
+                            />
                         </div>
                     </section>
 

@@ -96,7 +96,9 @@ class PlayerSearchTest extends TestCase
         $this->createPlayer(['name' => 'Jogador SP', 'city' => 'São Paulo']);
         $this->createPlayer(['name' => 'Jogador RJ', 'city' => 'Rio de Janeiro']);
 
-        $response = $this->actingAs($viewer)->get('/players/search?city=Rio');
+        // O filtro virou select do catálogo do IBGE, então o valor chega
+        // inteiro e a comparação é exata: meia palavra não filtra mais nada.
+        $response = $this->actingAs($viewer)->get('/players/search?city=Rio+de+Janeiro');
 
         $response->assertSee('Jogador RJ');
         $response->assertDontSee('Jogador SP');
