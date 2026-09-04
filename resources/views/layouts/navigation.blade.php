@@ -25,6 +25,29 @@
         </a>
     </div>
 
+    {{-- A ação principal fica fora da lista, logo abaixo da marca: é o
+         equivalente na tela grande da vaga elevada da barra do celular, e
+         some da navegação abaixo para não ser dita duas vezes. --}}
+    <div class="px-3 pt-4 shrink-0">
+        <a
+            href="{{ $isPlayer ? route('games.search') : route('games.create') }}"
+            class="flex items-center gap-2.5 rounded-xl px-3 h-11 font-black text-xs uppercase tracking-widest text-pitch-950 bg-emerald-400 hover:bg-emerald-300 shadow-lg shadow-emerald-500/20 transition"
+            :class="sidebarCollapsed && 'justify-center px-0'"
+            title="{{ $isPlayer ? __('Procurar Partidas') : __('Criar Partida') }}"
+        >
+            <span class="shrink-0">
+                @if ($isPlayer)
+                    <x-heroicon-s-magnifying-glass class="w-5 h-5" />
+                @else
+                    <x-heroicon-s-plus class="w-5 h-5" />
+                @endif
+            </span>
+            <span x-show="!sidebarCollapsed" x-transition.opacity.duration.150ms class="whitespace-nowrap">
+                {{ $isPlayer ? __('Procurar Partidas') : __('Criar Partida') }}
+            </span>
+        </a>
+    </div>
+
     <nav class="flex-1 overflow-y-auto scrollbar-slim py-4 px-3 space-y-1">
         <x-sidebar-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="heroicon-o-home">
             {{ __('Início') }}
@@ -38,9 +61,6 @@
         <div x-show="sidebarCollapsed" style="display: none;" class="mx-3 my-3 border-t border-pitch-800"></div>
 
         @if ($isPlayer)
-            <x-sidebar-link :href="route('games.search')" :active="request()->routeIs('games.search')" icon="heroicon-o-magnifying-glass">
-                {{ __('Procurar Partidas') }}
-            </x-sidebar-link>
             <x-sidebar-link :href="route('games.mine')" :active="request()->routeIs('games.mine')" icon="heroicon-o-trophy">
                 {{ __('Minhas Partidas') }}
             </x-sidebar-link>
@@ -53,20 +73,19 @@
                 </x-sidebar-link>
             @endif
         @else
-            <x-sidebar-link :href="route('games.create')" :active="request()->routeIs('games.create')" icon="heroicon-o-plus-circle">
-                {{ __('Criar Partida') }}
+            {{-- Procurar jogador vem antes de tudo o que é acompanhamento:
+                 é a outra metade do que se abre o app para fazer. --}}
+            <x-sidebar-link :href="route('players.search')" :active="request()->routeIs('players.search') || request()->routeIs('players.show')" icon="heroicon-o-magnifying-glass">
+                {{ __('Procurar Jogadores') }}
+            </x-sidebar-link>
+            <x-sidebar-link :href="route('sos.index')" :active="request()->routeIs('sos.index') || request()->routeIs('sos.show') || request()->routeIs('sos.create')" icon="heroicon-o-megaphone">
+                {{ __('SOS Goleiro') }}
             </x-sidebar-link>
             <x-sidebar-link :href="route('games.mine')" :active="request()->routeIs('games.mine')" icon="heroicon-o-trophy">
                 {{ __('Minhas Partidas') }}
             </x-sidebar-link>
             <x-sidebar-link :href="route('game-series.index')" :active="request()->routeIs('game-series.*')" icon="heroicon-o-arrow-path">
                 {{ __('Peladas Semanais') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('players.search')" :active="request()->routeIs('players.search') || request()->routeIs('players.show')" icon="heroicon-o-magnifying-glass">
-                {{ __('Procurar Jogadores') }}
-            </x-sidebar-link>
-            <x-sidebar-link :href="route('sos.index')" :active="request()->routeIs('sos.index') || request()->routeIs('sos.show') || request()->routeIs('sos.create')" icon="heroicon-o-exclamation-triangle">
-                {{ __('SOS Goleiro') }}
             </x-sidebar-link>
         @endif
 

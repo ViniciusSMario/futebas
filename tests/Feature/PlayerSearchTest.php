@@ -176,4 +176,22 @@ class PlayerSearchTest extends TestCase
         $response->assertSee('Campo');
         $response->assertSee('Intermediário');
     }
+
+    public function test_advanced_filters_stay_folded_when_none_is_set(): void
+    {
+        $response = $this->actingAs($this->organizer())->get('/players/search?position=Goleiro');
+
+        $response->assertOk();
+        $response->assertSee('advanced: false', false);
+    }
+
+    public function test_advanced_filters_unfold_when_one_of_them_is_set(): void
+    {
+        // Um filtro valendo e escondido é a forma mais rápida de a busca
+        // parecer quebrada: com "Nível" aplicado, o painel abre sozinho.
+        $response = $this->actingAs($this->organizer())->get('/players/search?level=Avançado');
+
+        $response->assertOk();
+        $response->assertSee('advanced: true', false);
+    }
 }

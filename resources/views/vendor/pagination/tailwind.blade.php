@@ -1,5 +1,5 @@
 @if ($paginator->hasPages())
-    <nav role="navigation" aria-label="{{ __('Pagination Navigation') }}">
+    <nav role="navigation" aria-label="{{ __('Navegação de páginas') }}">
 
         <div class="flex gap-2 items-center justify-between sm:hidden">
 
@@ -29,17 +29,17 @@
 
             <div>
                 <p class="text-sm text-pitch-400 leading-5">
-                    {!! __('Showing') !!}
+                    {!! __('Mostrando') !!}
                     @if ($paginator->firstItem())
                         <span class="font-medium text-pitch-200">{{ $paginator->firstItem() }}</span>
-                        {!! __('to') !!}
+                        {!! __('até') !!}
                         <span class="font-medium text-pitch-200">{{ $paginator->lastItem() }}</span>
                     @else
                         {{ $paginator->count() }}
                     @endif
-                    {!! __('of') !!}
+                    {!! __('de') !!}
                     <span class="font-medium text-pitch-200">{{ $paginator->total() }}</span>
-                    {!! __('results') !!}
+                    {!! __('resultados') !!}
                 </p>
             </div>
 
@@ -80,7 +80,7 @@
                                         <span class="inline-flex items-center px-4 py-2 -ml-px text-sm font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 cursor-default leading-5">{{ $page }}</span>
                                     </span>
                                 @else
-                                    <a href="{{ $url }}" class="inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-pitch-300 bg-pitch-900 border border-pitch-800 leading-5 hover:bg-pitch-800 focus:outline-none focus:ring ring-emerald-500/30 active:bg-pitch-700 transition ease-in-out duration-150" aria-label="{{ __('Go to page :page', ['page' => $page]) }}">
+                                    <a href="{{ $url }}" class="inline-flex items-center px-4 py-2 -ml-px text-sm font-medium text-pitch-300 bg-pitch-900 border border-pitch-800 leading-5 hover:bg-pitch-800 focus:outline-none focus:ring ring-emerald-500/30 active:bg-pitch-700 transition ease-in-out duration-150" aria-label="{{ __('Ir para a página :page', ['page' => $page]) }}">
                                         {{ $page }}
                                     </a>
                                 @endif

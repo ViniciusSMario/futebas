@@ -4,7 +4,7 @@
     $isActive = (bool) ($active ?? false);
 @endphp
 
-<a {{ $attributes->merge(['class' => 'relative flex flex-col items-center justify-center gap-1 pt-3 pb-2 min-h-[56px] transition '.($isActive ? 'text-emerald-400' : 'text-pitch-400 active:text-pitch-200')]) }}>
+<a {{ $attributes->merge(['class' => 'relative flex flex-col items-center justify-center gap-1 pt-3 pb-2 min-w-0 min-h-[56px] transition '.($isActive ? 'text-emerald-400' : 'text-pitch-400 active:text-pitch-200')]) }}>
     {{-- Barra no topo do item ativo: no celular o rótulo é pequeno demais
          para carregar sozinho o estado "você está aqui". --}}
     <span class="absolute top-0 h-0.5 w-8 rounded-full transition-colors {{ $isActive ? 'bg-emerald-400' : 'bg-transparent' }}"></span>

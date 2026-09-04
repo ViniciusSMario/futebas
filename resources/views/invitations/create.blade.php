@@ -79,7 +79,7 @@
                             </div>
                         </section>
 
-                        <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                        <div class="flex items-center gap-4 sticky-action">
                             <button type="submit" class="inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition">
                                 {{ __('Enviar Convite') }}
                             </button>

@@ -164,7 +164,7 @@
                         <p>{{ __('Ao publicar, todos os goleiros cadastrados na região da partida recebem uma notificação. As candidaturas ficam pendentes até você escolher uma.') }}</p>
                     </div>
 
-                    <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                    <div class="flex items-center gap-4 sticky-action">
                         <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 shadow-lg shadow-red-500/30 transition">
                             <x-heroicon-o-megaphone class="w-4 h-4" /> {{ __('Publicar SOS') }}
                         </button>
