@@ -38,7 +38,7 @@
                                                 <span class="font-bold text-emerald-400 shrink-0">R$ {{ number_format((float) $game->price, 2, ',', '.') }}</span>
                                             </div>
                                             <p class="text-sm text-pitch-300 mt-0.5">
-                                                {{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
+                                                {{ $game->whenLabel() }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
                                             </p>
                                             <p class="text-sm text-pitch-400 flex items-center gap-1 mt-0.5">
                                                 <x-heroicon-o-map-pin class="w-4 h-4 shrink-0" /> {{ $game->location }}, {{ $game->city }}

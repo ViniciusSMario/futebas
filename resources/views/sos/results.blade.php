@@ -9,24 +9,14 @@
                 &larr; {{ __('Nova busca') }}
             </a>
 
-            @if (session('status') === 'sos-invite-sent')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2500)"
-                    class="text-sm font-medium text-emerald-400 flex items-center gap-1"
-                ><x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Convite enviado.') }}</p>
-            @endif
-
             {{-- Match summary --}}
             <section class="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 text-white p-5 sm:p-6 shadow-lg shadow-red-500/20">
                 <p class="text-xs font-bold uppercase tracking-widest text-red-50">{{ __('Sua solicitação') }}</p>
-                <p class="mt-1 text-lg sm:text-xl font-extrabold">
-                    {{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }} &middot; {{ $game->modality }}
-                </p>
-                <p class="mt-1 text-sm text-red-50 flex items-center gap-1">
-                    <x-heroicon-o-map-pin class="w-4 h-4 shrink-0" /> {{ $game->location }}, {{ $game->city }}
+                <p class="mt-1 text-lg sm:text-xl font-extrabold">{{ $game->team_name }}</p>
+                <p class="mt-0.5 text-base font-bold text-white">{{ $game->whenLabel() }} &middot; {{ $game->modality }}</p>
+                <p class="mt-1 text-sm text-red-50 flex items-start gap-1">
+                    <x-heroicon-o-map-pin class="w-4 h-4 shrink-0 mt-0.5" />
+                    <a href="{{ $game->mapUrl() }}" target="_blank" rel="noopener" class="underline decoration-white/40 underline-offset-2 hover:decoration-white break-words">{{ $game->location }}, {{ $game->city }}</a>
                 </p>
                 <p class="mt-1 text-sm font-bold text-red-50">
                     {{ __('Valor oferecido') }}: R$ {{ number_format((float) $game->price, 2, ',', '.') }}

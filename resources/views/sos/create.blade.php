@@ -5,12 +5,6 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            @if (session('error'))
-                <p class="mb-5 rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 flex items-start gap-2">
-                    <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" /> {{ session('error') }}
-                </p>
-            @endif
-
             {{-- Quanto ainda cabe no plano deste mês. Aparece antes do
                  formulário porque descobrir que acabou depois de preencher
                  tudo é a pior hora de descobrir. --}}
@@ -70,7 +64,7 @@
                                 <option value="">{{ __('Selecione...') }}</option>
                                 @foreach ($games as $game)
                                     <option value="{{ $game->id }}" @selected((int) old('game_id') === $game->id)>
-                                        {{ $game->date->format('d/m') }} {{ $game->start_time->format('H:i') }} - {{ $game->team_name }} ({{ $game->location }}, {{ $game->city }})
+                                        {{ $game->team_name }} — {{ $game->whenLabel() }} ({{ $game->location }}, {{ $game->city }})
                                     </option>
                                 @endforeach
                             </select>

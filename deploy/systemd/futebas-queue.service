@@ -1,0 +1,43 @@
+# Worker da fila.
+#
+# 18 das 19 notificações do app são ShouldQueue. Sem este processo no ar,
+# convite, aviso de SOS, lembrete de partida e cobrança não falham: eles
+# apenas ficam parados na tabela `jobs`, para sempre, sem erro nenhum.
+#
+#   sudo cp deploy/systemd/futebas-queue.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now futebas-queue
+#
+# Trocar /var/www/futebas, o usuário e o caminho do php pelos desta máquina.
+
+[Unit]
+Description=Futebas - worker da fila
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/futebas
+
+# --max-time recicla o processo de hora em hora: worker é processo longo, e
+# processo longo em PHP acumula memória. Reiniciar de propósito é mais
+# barato do que descobrir o vazamento.
+# --tries=3 dá três chances antes de mandar para `failed_jobs`, porque a
+# falha típica aqui é rede (push, Stripe) e rede volta.
+ExecStart=/usr/bin/php /var/www/futebas/artisan queue:work --sleep=3 --tries=3 --backoff=60 --max-time=3600
+
+# Se cair, volta. É este processo que faz o app entregar o que promete.
+Restart=always
+RestartSec=5
+
+# Um trabalho em andamento termina antes de o processo morrer: matar no
+# meio de um envio é a forma mais fácil de duplicar uma notificação.
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+StandardOutput=append:/var/log/futebas/queue.log
+StandardError=append:/var/log/futebas/queue.log
+
+[Install]
+WantedBy=multi-user.target

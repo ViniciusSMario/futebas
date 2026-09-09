@@ -67,12 +67,18 @@ class GameReminder extends Notification implements ShouldQueue
     }
 
     /**
-     * A lista "Minhas Partidas", e não a página da partida: `games.show`
-     * é rota de organizador, e este aviso vai para quem joga também.
+     * A própria partida. `games.show` era rota de organizador quando este
+     * aviso foi escrito, e por isso ele levava à lista "Minhas Partidas";
+     * agora a tela é dos dois, e quem recebe "sua partida é amanhã" quer
+     * abrir justamente essa partida — o endereço no mapa e quem mais vai
+     * estão lá dentro.
+     *
+     * Todo destinatário deste aviso tem acesso a ela: os confirmados por
+     * serem participantes, o organizador por ser o dono.
      */
     private function url(): string
     {
-        return route('games.mine');
+        return route('games.show', $this->game);
     }
 
     private function summary(): string

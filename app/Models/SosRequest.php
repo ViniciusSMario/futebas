@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\When;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -112,6 +113,29 @@ class SosRequest extends Model
     {
         return $query->where('status', self::STATUS_OPEN)
             ->where(fn (Builder $q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()));
+    }
+
+    /**
+     * O prazo dito como quem precisa decidir o lê: "Faltam 40 minutos",
+     * "Faltam 3 horas", "Até sáb, 12/09 · 19:00".
+     *
+     * Um SOS é uma corrida contra o relógio — é a única coisa no app que
+     * é — e "Até 12/09 19:00" obrigava o goleiro a fazer de cabeça a
+     * subtração que decide se ele responde agora ou depois do jantar.
+     * Null quando a chamada não tem prazo: aí não há o que dizer.
+     */
+    public function deadlineLabel(): ?string
+    {
+        return $this->expires_at === null ? null : When::remaining($this->expires_at);
+    }
+
+    /**
+     * O quanto o prazo aperta: 'past', 'urgent', 'soon' ou 'calm'.
+     * {@see When::urgency()}
+     */
+    public function deadlineUrgency(): ?string
+    {
+        return $this->expires_at === null ? null : When::urgency($this->expires_at);
     }
 
     public function pendingApplicationsCount(): int

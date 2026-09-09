@@ -264,4 +264,31 @@ class InvitationTest extends TestCase
         $this->actingAs($organizer)->patch("/invitations/{$invitation->id}/accept")->assertForbidden();
         $this->assertSame(Invitation::STATUS_PENDING, $invitation->fresh()->status);
     }
+
+    public function test_inviting_from_the_search_comes_back_to_the_search(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $game = $this->createGame($organizer);
+        $playerProfile = $this->createPlayerProfile(User::factory()->create());
+
+        // Quem monta uma pelada convida quatro pessoas seguidas: voltar para
+        // a partida a cada convite obrigaria a refazer a busca toda vez.
+        $search = route('players.search', ['game' => $game->id, 'position' => 'Goleiro']);
+
+        $this->actingAs($organizer)
+            ->from($search)
+            ->post(route('games.invitations.store', [$game, $playerProfile]))
+            ->assertRedirect($search);
+    }
+
+    public function test_inviting_without_a_referer_falls_back_to_the_game(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $game = $this->createGame($organizer);
+        $playerProfile = $this->createPlayerProfile(User::factory()->create());
+
+        $this->actingAs($organizer)
+            ->post(route('games.invitations.store', [$game, $playerProfile]))
+            ->assertRedirect(route('games.show', ['game' => $game, 'tab' => 'convites']));
+    }
 }

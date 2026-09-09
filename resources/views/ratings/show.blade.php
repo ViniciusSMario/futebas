@@ -59,7 +59,7 @@
                                     <p class="font-bold text-white truncate">{{ $rating->organizer->name }}</p>
                                     @if ($rating->game)
                                         <p class="text-xs text-pitch-400 mt-0.5">
-                                            {{ $rating->game->team_name }} &middot; {{ $rating->game->date->format('d/m/Y') }}
+                                            {{ $rating->game->team_name }} &middot; {{ $rating->game->dayLabel() }}
                                         </p>
                                     @endif
                                 </div>

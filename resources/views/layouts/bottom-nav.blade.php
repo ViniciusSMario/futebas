@@ -140,6 +140,23 @@
                     <x-plan-badge :plan="Auth::user()->currentPlan()" />
                 </a>
 
+                {{-- Só aparece para quem ainda pode instalar: some sozinha
+                     dentro do app instalado, e existe porque dispensar o
+                     cartão não pode virar beco sem saída - no iPhone não há
+                     prompt do navegador para reaparecer por conta própria. --}}
+                <button
+                    x-cloak
+                    x-show="$store.install.available"
+                    type="button"
+                    @click="moreOpen = false; $store.install.show()"
+                    class="flex items-center gap-3 rounded-xl px-3 min-h-[52px] text-base font-semibold text-pitch-200 active:bg-pitch-800 transition"
+                >
+                    <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
+                        <x-heroicon-o-arrow-down-tray class="w-5 h-5" />
+                    </span>
+                    {{ __('Instalar o app') }}
+                </button>
+
                 <a
                     href="{{ route('notifications.index') }}"
                     @click="moreOpen = false"

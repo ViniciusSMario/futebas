@@ -32,11 +32,13 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="font-bold text-white truncate">🧤 {{ $sosRequest->game->date->format('d/m') }} {{ $sosRequest->game->start_time->format('H:i') }}</h3>
+                                        <h3 class="font-bold text-white truncate">🧤 {{ $sosRequest->game->team_name }}</h3>
                                         <x-sos-status-badge :sos-request="$sosRequest" />
                                     </div>
 
-                                    <p class="mt-1 text-sm text-pitch-400 flex items-center gap-1 truncate">
+                                    <p class="mt-1 text-sm font-bold text-pitch-200">{{ $sosRequest->game->whenLabel() }}</p>
+
+                                    <p class="mt-0.5 text-sm text-pitch-400 flex items-center gap-1 truncate">
                                         <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" /> {{ $sosRequest->game->location }}, {{ $sosRequest->game->city }}
                                     </p>
                                 </div>
@@ -64,6 +66,10 @@
                                     </span>
                                 @else
                                     <span>{{ __('Nenhuma candidatura ainda') }}</span>
+                                @endif
+
+                                @if ($sosRequest->isOpen())
+                                    <x-sos-deadline :sos-request="$sosRequest" class="ms-auto" />
                                 @endif
                             </div>
                         </a>

@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header icon="heroicon-o-magnifying-glass" :title="__('Procurar Jogadores')" :subtitle="__('Comece pela posição — o goleiro está a um toque')" />
+        <x-page-header
+            icon="heroicon-o-magnifying-glass"
+            :title="__('Procurar Jogadores')"
+            :subtitle="$game ? __('Convidando para :partida', ['partida' => $game->team_name]) : __('Comece pela posição — o goleiro está a um toque')"
+            :back="$game ? route('games.show', ['game' => $game, 'tab' => 'convites']) : null"
+        />
     </x-slot>
 
     @php
         $selectedPosition = $filters['position'] ?? '';
-        $selectedAvailability = $filters['availability'] ?? '';
+        $selectedAvailability = (string) ($filters['availability'] ?? '');
         $hasActiveFilters = collect($filters)->filter()->isNotEmpty();
 
         // O que fica atrás de "Mais filtros". Se algum deles estiver valendo,
@@ -15,16 +20,100 @@
         $advancedCount = collect($advancedFilters)->filter(fn ($key) => filled($filters[$key] ?? null))->count();
 
         $lookingForGoalkeeper = $selectedPosition === 'Goleiro';
+
+        // O dia da semana da partida em vista, para a sugestão de um toque
+        // "só quem joga nesse dia".
+        $gameWeekday = $game?->date?->dayOfWeek;
+        $gameWeekdayLabel = $gameWeekday === null
+            ? null
+            : (\App\Http\Controllers\PlayerController::AVAILABILITY_OPTIONS[$gameWeekday] ?? null);
+        $filteringByGameWeekday = $gameWeekday !== null && $selectedAvailability === (string) $gameWeekday;
     @endphp
 
     <div class="py-5 sm:py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+
             <form
                 method="get"
                 action="{{ route('players.search') }}"
                 x-data="{ advanced: {{ $advancedCount > 0 ? 'true' : 'false' }} }"
                 class="bg-pitch-900 rounded-2xl border border-pitch-800 shadow-sm shadow-black/20 p-4 sm:p-5 space-y-4"
             >
+                {{-- Para quem se está procurando. Este seletor é a diferença
+                     entre uma busca e um convite: com uma partida escolhida,
+                     quem já está nela some da lista e cada card passa a
+                     convidar direto, sem as três telas do caminho antigo.
+                     Vive dentro do mesmo <form> dos filtros para que trocar
+                     de partida não jogue fora o que já foi filtrado. --}}
+                @if ($invitableGames->isNotEmpty())
+                    <div class="-mx-4 -mt-4 sm:-mx-5 sm:-mt-5 px-4 sm:px-5 py-3 rounded-t-2xl border-b {{ $game ? 'bg-emerald-500/10 border-emerald-500/25' : 'bg-pitch-800/40 border-pitch-800' }}">
+                        <label for="game" class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest {{ $game ? 'text-emerald-400' : 'text-pitch-500' }}">
+                            <x-heroicon-o-envelope class="w-3.5 h-3.5" />
+                            {{ __('Convidar para') }}
+                        </label>
+
+                        <select
+                            id="game"
+                            name="game"
+                            onchange="this.form.submit()"
+                            class="mt-1.5 block w-full rounded-lg border-pitch-700 bg-pitch-800 text-sm font-bold text-white focus:border-emerald-500 focus:ring-emerald-500 shadow-sm"
+                        >
+                            <option value="">{{ __('Nenhuma partida — só olhando') }}</option>
+                            @foreach ($invitableGames as $invitableGame)
+                                <option value="{{ $invitableGame->id }}" @selected($game?->id === $invitableGame->id)>
+                                    {{ $invitableGame->team_name }} — {{ $invitableGame->date->translatedFormat('D, d/m') }} {{ $invitableGame->start_time?->format('H:i') }}
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @if ($game)
+                            <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+                                <span class="font-semibold text-emerald-300">
+                                    {{ trans_choice(':count vaga aberta|:count vagas abertas', $game->spotsRemaining(), ['count' => $game->spotsRemaining()]) }}
+                                </span>
+
+                                {{-- A disponibilidade já existia como filtro, mas
+                                     solta: ninguém procura "quem joga quarta",
+                                     procura "quem joga nesta partida". Aqui ela
+                                     vira um toque, e não um default silencioso:
+                                     jogador que nunca preencheu disponibilidade
+                                     sumiria da busca sem ninguém entender por quê. --}}
+                                @if ($gameWeekdayLabel)
+                                    <button
+                                        type="button"
+                                        onclick="this.form.availability.value='{{ $filteringByGameWeekday ? '' : $gameWeekday }}'; this.form.submit();"
+                                        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-bold transition {{ $filteringByGameWeekday ? 'bg-emerald-400 text-pitch-950' : 'bg-pitch-800 text-pitch-300 hover:text-white' }}"
+                                    >
+                                        @if ($filteringByGameWeekday)
+                                            <x-heroicon-s-check class="w-3.5 h-3.5" />
+                                        @endif
+                                        {{ __('Joga :dia', ['dia' => mb_strtolower($gameWeekdayLabel)]) }}
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                {{-- Nome. Muita busca de pelada não é por atributo, é por
+                     pessoa: "aquele goleiro que o Rafael trouxe". --}}
+                <div>
+                    <label for="q" class="sr-only">{{ __('Nome do jogador') }}</label>
+                    <div class="relative">
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-pitch-500">
+                            <x-heroicon-o-magnifying-glass class="w-5 h-5" />
+                        </span>
+                        <x-text-input
+                            id="q"
+                            name="q"
+                            type="search"
+                            :value="$filters['q'] ?? ''"
+                            class="block w-full rounded-xl ps-10 min-h-[44px] focus:border-emerald-500 focus:ring-emerald-500"
+                            placeholder="{{ __('Buscar pelo nome...') }}"
+                        />
+                    </div>
+                </div>
+
                 {{-- Posição em fileira de toque, e não num select: é o filtro
                      que o organizador usa em toda busca, e nove em cada dez
                      vezes para achar um goleiro. Trocar de posição já busca. --}}
@@ -121,9 +210,12 @@
 
                     <div>
                         <x-input-label for="availability" :value="__('Disponibilidade')" />
+                        {{-- As chaves numéricas de AVAILABILITY_OPTIONS viram int
+                             em PHP, e o valor da busca chega string: comparar com
+                             === deixava o dia escolhido sem marcar ao recarregar. --}}
                         <select id="availability" name="availability" class="mt-1 block w-full rounded-lg bg-pitch-800 border-pitch-700 text-white focus:border-emerald-500 focus:ring-emerald-500 shadow-sm">
                             @foreach (\App\Http\Controllers\PlayerController::AVAILABILITY_OPTIONS as $value => $label)
-                                <option value="{{ $value }}" @selected($selectedAvailability === $value)>{{ __($label) }}</option>
+                                <option value="{{ $value }}" @selected($selectedAvailability === (string) $value)>{{ __($label) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -162,7 +254,7 @@
                     </button>
 
                     @if ($hasActiveFilters)
-                        <a href="{{ route('players.search') }}" class="ms-auto text-sm font-medium text-pitch-400 hover:text-white">
+                        <a href="{{ route('players.search', $game ? ['game' => $game->id] : []) }}" class="ms-auto text-sm font-medium text-pitch-400 hover:text-white">
                             {{ __('Limpar filtros') }}
                         </a>
                     @endif
@@ -173,7 +265,7 @@
                  necessidade em dois tempos: quem não achou aqui precisa do
                  SOS agora, não do menu. --}}
             <a
-                href="{{ route('sos.index') }}"
+                href="{{ $game ? route('sos.create') : route('sos.index') }}"
                 class="group flex items-center gap-3 rounded-2xl px-4 py-3 transition {{ $lookingForGoalkeeper ? 'bg-gradient-to-r from-red-600 to-orange-500 shadow-glow-red' : 'bg-pitch-900 border border-pitch-800 hover:border-red-500/40' }}"
             >
                 <span class="flex items-center justify-center w-10 h-10 rounded-xl shrink-0 {{ $lookingForGoalkeeper ? 'bg-white/20 text-white' : 'bg-red-500/10 text-red-400' }}">
@@ -189,6 +281,9 @@
             <div class="flex items-center justify-between">
                 <p class="text-sm text-pitch-400">
                     {{ trans_choice(':count jogador encontrado|:count jogadores encontrados', $players->total(), ['count' => $players->total()]) }}
+                    @if ($game)
+                        <span class="text-pitch-500">{{ __('· quem já está na partida não aparece') }}</span>
+                    @endif
                 </p>
             </div>
 
@@ -198,7 +293,7 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach ($players as $playerProfile)
                         <div class="group bg-pitch-900 rounded-2xl border border-pitch-800 shadow-sm shadow-black/20 p-5 flex flex-col hover:shadow-md hover:shadow-black/30 hover:border-emerald-600/40 transition">
-                            <div class="flex items-center gap-4">
+                            <a href="{{ route('players.show', $playerProfile) }}" class="flex items-center gap-4">
                                 @if ($playerProfile->photo_path)
                                     <img src="{{ \Illuminate\Support\Facades\Storage::url($playerProfile->photo_path) }}" alt="{{ $playerProfile->user->name }}" class="h-16 w-16 rounded-full object-cover shrink-0 ring-2 ring-pitch-800 shadow-sm">
                                 @else
@@ -225,7 +320,7 @@
                                         <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" /> {{ $playerProfile->city }}@if ($playerProfile->state), {{ $playerProfile->state }}@endif
                                     </p>
                                 </div>
-                            </div>
+                            </a>
 
                             <div class="mt-4 flex flex-wrap gap-1.5">
                                 @if ($playerProfile->positions[0] ?? null)
@@ -259,9 +354,24 @@
                                 </div>
                             </div>
 
-                            <a href="{{ route('players.show', $playerProfile) }}" class="mt-4 inline-flex justify-center items-center px-4 min-h-[44px] rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 transition">
-                                {{ __('Ver Perfil') }}
-                            </a>
+                            {{-- Com partida em vista o card convida; sem ela, só
+                                 leva ao perfil. É a mesma tela nos dois casos
+                                 porque é a mesma pergunta - muda o que se pode
+                                 fazer com a resposta. --}}
+                            @if ($game)
+                                <form method="post" action="{{ route('games.invitations.store', [$game, $playerProfile]) }}" class="mt-4">
+                                    @csrf
+                                    <input type="hidden" name="position" value="{{ $playerProfile->positions[0] ?? '' }}">
+                                    <button type="submit" class="w-full inline-flex justify-center items-center gap-1.5 px-4 min-h-[44px] rounded-xl font-bold text-xs uppercase tracking-widest text-pitch-950 bg-emerald-400 hover:bg-emerald-300 transition">
+                                        <x-heroicon-o-envelope class="w-4 h-4" />
+                                        {{ __('Convidar') }}
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('players.show', $playerProfile) }}" class="mt-4 inline-flex justify-center items-center px-4 min-h-[44px] rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-500 transition">
+                                    {{ __('Ver Perfil') }}
+                                </a>
+                            @endif
                         </div>
                     @endforeach
                 </div>

@@ -1,4 +1,17 @@
-@props(['game', 'gamePlayer', 'actions' => ['confirm', 'payment', 'remove'], 'ratedUserIds' => null])
+{{-- `viewer` decide o que a mesma linha conta.
+
+     Para o organizador ela é uma ficha de administração: quanto a pessoa
+     deve, se pagou, se faltou, e os botões que mexem nisso. Para quem
+     apenas joga a partida ela é só "quem vai" — dinheiro alheio e a falta
+     que o organizador anotou não são assunto de time, e a linha mostraria
+     os dois se o padrão fosse mostrar tudo. --}}
+@props([
+    'game',
+    'gamePlayer',
+    'actions' => ['confirm', 'payment', 'remove'],
+    'ratedUserIds' => null,
+    'viewer' => 'organizer',
+])
 
 @php
     $isGuest = $gamePlayer->isGuest();
@@ -31,6 +44,9 @@
     $hasCheckedIn = $gamePlayer->hasCheckedIn();
     $isNoShow = (bool) $gamePlayer->no_show;
     $isRated = ! $isGuest && $ratedUserIds !== null && $ratedUserIds->contains($gamePlayer->user_id);
+
+    $isAdminView = $viewer === 'organizer';
+    $actions = $isAdminView ? $actions : [];
 @endphp
 
 <div class="flex flex-wrap items-center gap-3 bg-pitch-900 rounded-2xl border border-pitch-800 p-4">
@@ -50,18 +66,22 @@
             @endif
         </p>
         <p class="text-xs text-pitch-400 truncate">
-            @if ($position) {{ $position }} &middot; @endif
-            R$ {{ number_format((float) ($gamePlayer->amount_due ?? 0), 2, ',', '.') }}
+            @if ($isAdminView)
+                @if ($position) {{ $position }} &middot; @endif
+                R$ {{ number_format((float) ($gamePlayer->amount_due ?? 0), 2, ',', '.') }}
+            @else
+                {{ $position ?? ($isGuest ? __('Convidado') : __('Sem posição informada')) }}
+            @endif
         </p>
     </div>
 
     <div class="flex items-center gap-1.5 shrink-0">
         <x-badge :color="$statusColor">{{ $statusLabel }}</x-badge>
-        @unless ($isCancelled)
+        @if ($isAdminView && ! $isCancelled)
             <x-badge :color="$isPaid ? 'emerald' : 'amber'">{{ $isPaid ? __('Pago') : __('Pendente') }}</x-badge>
-        @endunless
+        @endif
 
-        @if ($isConfirmed && $isNoShow)
+        @if ($isConfirmed && $isNoShow && $isAdminView)
             <x-badge color="red">{{ __('Faltou') }}</x-badge>
         @elseif ($isConfirmed && $hasCheckedIn)
             <x-badge color="emerald">
@@ -72,14 +92,14 @@
         @endif
     </div>
 
-    @if ($isCancelled && $gamePlayer->cancellation_reason)
+    @if ($isAdminView && $isCancelled && $gamePlayer->cancellation_reason)
         <p class="w-full text-xs text-pitch-400 bg-pitch-800/60 border border-pitch-800 rounded-lg px-3 py-2">
             <span class="font-semibold text-pitch-300">{{ __('Motivo do cancelamento:') }}</span>
             {{ $gamePlayer->cancellation_reason }}
         </p>
     @endif
 
-    @if ($isCancelled && ! $isGuest && $ratedUserIds !== null)
+    @if ($isAdminView && $isCancelled && ! $isGuest && $ratedUserIds !== null)
         <div class="w-full flex items-center justify-end pt-1">
             @if ($isRated)
                 <x-badge color="emerald">
@@ -128,7 +148,13 @@
             @endif
 
             @if (in_array('remove', $actions) && $gamePlayer->status !== 'cancelled')
-                <form method="post" action="{{ route('game-players.destroy', [$game, $gamePlayer]) }}" onsubmit="return confirm('{{ __('Remover esse jogador do Game?') }}')">
+                <form
+                    method="post"
+                    action="{{ route('game-players.destroy', [$game, $gamePlayer]) }}"
+                    data-confirm="{{ __('Remover :nome da partida?', ['nome' => $participant->name]) }}"
+                    data-confirm-text="{{ __('A vaga é liberada e quem estiver na lista de espera pode assumi-la.') }}"
+                    data-confirm-button="{{ __('Remover') }}"
+                >
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition">

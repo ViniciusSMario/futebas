@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\GameInvitationStoreRequest;
 use App\Http\Requests\InvitationStoreRequest;
 use App\Models\Game;
-use App\Models\GamePlayer;
 use App\Models\Invitation;
 use App\Models\PlayerProfile;
 use App\Notifications\InvitationAnswered;
@@ -140,33 +139,20 @@ class InvitationController extends Controller
     }
 
     /**
-     * Search for players to invite directly to the given game, excluding
-     * anyone already an active participant or already pending-invited.
+     * Procurar jogadores para convidar para esta partida.
+     *
+     * Existia aqui uma segunda tela de busca, com o mesmo propósito da de
+     * `players.search` e um formulário que foi ficando para trás dela. Duas
+     * buscas para a mesma pergunta é uma a mais: esta rota continua valendo,
+     * porque é o link que sai da partida e é um endereço melhor do que uma
+     * query string, mas quem responde é a busca de verdade, com a partida
+     * em vista.
      */
-    public function searchForGame(Request $request, Game $game): View
+    public function searchForGame(Request $request, Game $game): RedirectResponse
     {
         abort_unless($game->user_id === $request->user()->id, 403);
 
-        // Guest participants have a null user_id, and a single null inside
-        // a NOT IN turns the whole comparison null — which would silently
-        // empty the search as soon as the game had one guest.
-        $excludeUserIds = $game->gamePlayers()
-            ->where('status', '!=', GamePlayer::STATUS_CANCELLED)
-            ->whereNotNull('user_id')
-            ->pluck('user_id')
-            ->concat(
-                $game->invitations()->where('status', Invitation::STATUS_PENDING)->pluck('user_id')
-            )
-            ->filter()
-            ->unique()
-            ->values()
-            ->all();
-
-        return view('games.invite-search', [
-            'game' => $game,
-            'players' => PlayerController::search($request, $excludeUserIds),
-            'filters' => $request->only(['position', 'modality', 'state', 'city', 'level', 'availability', 'max_price', 'sort']),
-        ]);
+        return redirect()->route('players.search', ['game' => $game->id] + $request->query());
     }
 
     /**
@@ -187,7 +173,11 @@ class InvitationController extends Controller
             ->exists();
 
         if ($alreadyInvited) {
-            return back()->withErrors(['user_id' => __('Este jogador já foi convidado para esse Game.')]);
+            // Flash, e não `withErrors`: isto volta para a busca de
+            // jogadores, que não tem campo `user_id` onde pendurar a
+            // mensagem — ela ia para lugar nenhum. Erro de campo fica no
+            // campo; ação recusada é aviso de página.
+            return back()->with('error', __('Este jogador já foi convidado para essa partida.'));
         }
 
         $invitation = Invitation::create([
@@ -202,6 +192,12 @@ class InvitationController extends Controller
 
         $invitation->user->notify(new InvitationReceived($invitation));
 
-        return redirect()->route('games.show', ['game' => $game, 'tab' => 'convites'])->with('status', 'invitation-sent');
+        // Volta para de onde o convite saiu, que quase sempre é a busca:
+        // quem está montando uma pelada convida quatro pessoas seguidas, e
+        // ser jogado de volta para a partida a cada convite obrigaria a
+        // refazer a busca inteira toda vez.
+        return redirect()
+            ->back(fallback: route('games.show', ['game' => $game, 'tab' => 'convites']))
+            ->with('status', 'invitation-sent');
     }
 }

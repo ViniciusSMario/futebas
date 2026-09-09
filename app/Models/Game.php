@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\When;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -90,16 +91,29 @@ class Game extends Model
      * with a time component and `start_time` as a bare time, so both
      * comparisons go through whereDate/whereTime to stay portable between
      * MySQL (dev) and SQLite (tests).
+     *
+     * O `where` de fora parece repetir o bloco de dentro, e repete mesmo:
+     * ele existe para o índice `(status, date)`. `whereDate` embrulha a
+     * coluna em `date(...)`, e coluna dentro de função é coluna que nenhum
+     * índice alcança — a busca de partidas leria a tabela inteira todo dia,
+     * índice ou não. Esta comparação simples corta o passado usando o
+     * índice, e o bloco abaixo continua decidindo o caso exato. Não muda
+     * resultado: os dois ramos do OR implicam `date >= hoje`, então o
+     * recorte nunca descarta linha que o OR aceitaria.
      */
     public function scopeUpcoming(Builder $query): Builder
     {
-        return $query->where(function (Builder $query) {
-            $query->whereDate('date', '>', today())
-                ->orWhere(fn (Builder $query) => $query
-                    ->whereDate('date', today())
-                    ->whereTime('start_time', '>=', now())
-                );
-        });
+        $today = today()->toDateString();
+
+        return $query
+            ->where('date', '>=', $today)
+            ->where(function (Builder $query) use ($today) {
+                $query->whereDate('date', '>', $today)
+                    ->orWhere(fn (Builder $query) => $query
+                        ->whereDate('date', $today)
+                        ->whereTime('start_time', '>=', now())
+                    );
+            });
     }
 
     public function user(): BelongsTo
@@ -131,6 +145,33 @@ class Game extends Model
     public function gameTeams(): HasMany
     {
         return $this->hasMany(GameTeam::class);
+    }
+
+    /**
+     * Quem já não faz sentido aparecer numa busca de jogadores para
+     * convidar: quem está na partida e quem tem convite esperando resposta.
+     * Convidar de novo não é um erro grave, mas é ruído — e o organizador
+     * que vê o mesmo nome duas vezes na lista fica na dúvida se mandou.
+     *
+     * Participante convidado tem `user_id` nulo: um único null dentro de um
+     * NOT IN torna a comparação inteira nula, e a busca esvaziaria sozinha
+     * assim que a partida tivesse um convidado sem conta.
+     *
+     * @return array<int, int>
+     */
+    public function excludedInviteeIds(): array
+    {
+        return $this->gamePlayers()
+            ->where('status', '!=', GamePlayer::STATUS_CANCELLED)
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->concat(
+                $this->invitations()->where('status', Invitation::STATUS_PENDING)->pluck('user_id')
+            )
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
@@ -299,6 +340,48 @@ class Game extends Model
     public function startsAt(): Carbon
     {
         return $this->date->copy()->setTimeFromTimeString($this->start_time->format('H:i:s'));
+    }
+
+    /**
+     * A abreviação do dia da semana: "Sáb".
+     */
+    public function weekdayShort(): string
+    {
+        return When::weekdayShort($this->date);
+    }
+
+    /**
+     * O dia da partida como alguém marca pelada: "Hoje", "Amanhã",
+     * "Sáb, 12/09".
+     */
+    public function dayLabel(): string
+    {
+        return When::day($this->date);
+    }
+
+    /**
+     * O dia e a hora numa linha só: "Sáb, 12/09 · 20:00".
+     */
+    public function whenLabel(): string
+    {
+        return When::dayAndTime($this->startsAt());
+    }
+
+    /**
+     * O endereço num link que abre o mapa do celular.
+     *
+     * `location` é texto livre ("Quadra do Zé"), então o que se manda para
+     * o mapa é ele mais cidade e estado — sem isso "Society Central" cai
+     * em qualquer uma das cinco cidades com esse nome. A busca do Google
+     * Maps é a rota certa aqui: o `geo:` nativo não existe no iOS e um
+     * link de coordenadas exigiria geocodificar um endereço que a pessoa
+     * digitou à mão.
+     */
+    public function mapUrl(): string
+    {
+        $query = implode(', ', array_filter([$this->location, $this->city, $this->state]));
+
+        return 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($query);
     }
 
     /**

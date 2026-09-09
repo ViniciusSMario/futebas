@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use PDO;
 
 #[Fillable([
     'user_id',
@@ -123,6 +126,60 @@ class PlayerProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Filtro de posição — o mais usado da busca inteira.
+     *
+     * A forma da consulta aqui não é estilo, é a diferença entre usar o
+     * índice e ler a tabela toda. `positions` é JSON, e o índice que o MySQL
+     * oferece para procurar dentro de um array é o multivalorado, que só é
+     * considerado quando a consulta endereça o JSON do mesmo jeito que o
+     * índice. `whereJsonContains()` gera `json_contains(positions, ?)`, sem
+     * caminho; o índice é sobre `positions->'$'`. São expressões diferentes
+     * para o otimizador, e medindo com EXPLAIN a diferença é literal:
+     *
+     *   json_contains(positions, ?)              -> type=ALL,  nenhuma chave
+     *   ? member of (positions->'$')             -> type=ref,  usa o índice
+     *
+     * Fora do MySQL 8.0.17+ nada disso existe — `member of` é erro de
+     * sintaxe no SQLite dos testes e no MariaDB —, então a consulta antiga
+     * continua valendo lá. Ela dá o mesmo resultado; só dá mais devagar.
+     *
+     * @param  Builder<PlayerProfile>  $query
+     * @return Builder<PlayerProfile>
+     */
+    public function scopeWherePlaysPosition(Builder $query, string $position): Builder
+    {
+        if (self::supportsMemberOf($query->getConnection())) {
+            return $query->whereRaw('? member of (`positions`->\'$\')', [$position]);
+        }
+
+        return $query->whereJsonContains('positions', $position);
+    }
+
+    /**
+     * O MariaDB precisa ser recusado pelo nome: ele se anuncia como "10.x",
+     * que passaria por qualquer comparação contra 8.0.17 sem ter o recurso.
+     * A versão vem do handshake do PDO, então não custa uma consulta, e o
+     * resultado fica guardado por conexão.
+     *
+     * @var array<string, bool>
+     */
+    private static array $memberOfSupport = [];
+
+    private static function supportsMemberOf(Connection $connection): bool
+    {
+        if ($connection->getDriverName() !== 'mysql') {
+            return false;
+        }
+
+        return self::$memberOfSupport[$connection->getName()] ??= (function () use ($connection) {
+            $version = (string) $connection->getPdo()->getAttribute(PDO::ATTR_SERVER_VERSION);
+
+            return ! str_contains(strtolower($version), 'mariadb')
+                && version_compare($version, '8.0.17', '>=');
+        })();
     }
 
     /**

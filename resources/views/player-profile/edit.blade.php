@@ -175,15 +175,6 @@
                                 {{ __('Salvar') }}
                             </button>
 
-                            @if (session('status') === 'player-profile-updated')
-                                <p
-                                    x-data="{ show: true }"
-                                    x-show="show"
-                                    x-transition
-                                    x-init="setTimeout(() => show = false, 2000)"
-                                    class="text-sm font-medium text-emerald-400 flex items-center gap-1"
-                                ><x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Salvo.') }}</p>
-                            @endif
                         </div>
                     </div>
                 </form>

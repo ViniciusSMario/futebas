@@ -7,26 +7,6 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            @if (session('error'))
-                <p class="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 flex items-start gap-2">
-                    <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" /> {{ session('error') }}
-                </p>
-            @endif
-
-            @if (session('status') === 'subscription-processing')
-                <p class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-medium text-emerald-300 flex items-start gap-2">
-                    <x-heroicon-o-check-circle class="w-5 h-5 shrink-0" />
-                    {{ __('Pagamento recebido! Estamos confirmando com a operadora — seu plano é liberado em instantes.') }}
-                </p>
-            @endif
-
-            @if (session('status') === 'subscription-simulated')
-                <p class="rounded-xl bg-blue-500/10 border border-blue-500/30 px-4 py-3 text-sm font-medium text-blue-300 flex items-start gap-2">
-                    <x-heroicon-o-beaker class="w-5 h-5 shrink-0" />
-                    {{ __('Plano trocado no modo de teste, sem cobrança nenhuma.') }}
-                </p>
-            @endif
-
             {{-- ==================== PLANO ATUAL ==================== --}}
             <div class="bg-pitch-900 rounded-2xl border border-pitch-800 shadow-card p-5 sm:p-6">
                 <div class="flex flex-wrap items-start justify-between gap-4">

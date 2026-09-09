@@ -52,7 +52,10 @@
         </div>
     @endunless
 
-    @if ($game->isOpen())
+    {{-- O sorteio é do organizador; a escalação que sai dele é de todo
+         mundo. Quem joga abre esta aba para saber em que time caiu e quem
+         está com ele, não para redesenhar os times. --}}
+    @if ($isOrganizer && $game->isOpen())
     <section class="bg-pitch-900 rounded-3xl border border-pitch-800 shadow-card p-5 sm:p-6">
         <h3 class="flex items-center gap-1.5 text-sm font-black uppercase tracking-wide text-pitch-300 mb-4">
             <x-heroicon-o-sparkles class="w-4 h-4 text-emerald-400" /> {{ __('Sortear Times') }}
@@ -124,7 +127,13 @@
     @endif
 
     @if ($gameTeams->isEmpty() && $game->isOpen())
-        <x-empty-state icon="heroicon-o-flag" :title="__('Nenhum time sorteado ainda.')" :description="__('Confirme jogadores na aba Participantes e clique em Sortear Times.')" />
+        <x-empty-state
+            icon="heroicon-o-flag"
+            :title="__('Nenhum time sorteado ainda.')"
+            :description="$isOrganizer
+                ? __('Confirme jogadores na aba Participantes e clique em Sortear Times.')
+                : __('O organizador ainda não dividiu os times desta partida.')"
+        />
     @elseif ($gameTeams->isEmpty())
         <x-empty-state icon="heroicon-o-flag" :title="__('Nenhum time foi sorteado.')" :description="__('Esta partida terminou sem divisão de times registrada.')" />
     @else

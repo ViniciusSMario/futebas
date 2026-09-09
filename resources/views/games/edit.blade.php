@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header icon="heroicon-o-pencil-square" :title="__('Editar Game')" :subtitle="$game->team_name" />
+        <x-page-header icon="heroicon-o-pencil-square" :title="__('Editar Partida')" :subtitle="$game->team_name" />
     </x-slot>
 
     @php
@@ -20,7 +20,7 @@
                         </h3>
 
                         <div>
-                            <x-input-label for="team_name" :value="__('Nome do Game')" />
+                            <x-input-label for="team_name" :value="__('Nome da partida')" />
                             <x-text-input id="team_name" name="team_name" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('team_name', $game->team_name)" required autofocus />
                             <x-input-error class="mt-2" :messages="$errors->get('team_name')" />
                         </div>

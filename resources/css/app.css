@@ -44,6 +44,12 @@
     }
 }
 
+@keyframes fi-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 @layer components {
     /* --- Surfaces -------------------------------------------------- */
 
@@ -194,8 +200,71 @@
         }
     }
 
+    /* Cartão fixo que precisa conviver com a barra inferior. O afastamento
+       conta a barra (3.5rem) mais o botão elevado que sobe do meio dela
+       (1.5rem) mais uma folga: preso só à altura da barra, o "+" atravessa
+       o cartão pelo meio. Acima de lg a barra não existe e o afastamento
+       volta a ser o de qualquer canto de tela. */
+    .above-bottom-nav {
+        bottom: calc(5.5rem + env(safe-area-inset-bottom));
+    }
+
+    @media (min-width: 1024px) {
+        .above-bottom-nav {
+            bottom: 1.5rem;
+        }
+    }
+
     .pt-safe {
         padding-top: env(safe-area-inset-top);
+    }
+
+    /* Onde o toast de feedback aparece.
+
+       No celular ele tem de vir abaixo da barra superior, que é fixa, tem
+       56px e ainda carrega a área segura do notch. No desktop essa barra
+       não existe — quem manda é a lateral — e o toast volta para o canto
+       de cima da tela. */
+    .flash-top {
+        top: calc(env(safe-area-inset-top) + 4rem);
+    }
+
+    @media (min-width: 1024px) {
+        .flash-top {
+            top: 1.25rem;
+        }
+    }
+
+    /* Botão que já foi apertado.
+
+       O `disabled` vem do JS (resources/js/confirm.js) e é ele que impede o
+       segundo POST; isto aqui é só o que a pessoa vê. O rótulo continua no
+       lugar e a roda entra à esquerda dele — trocar o texto por "Enviando"
+       faria o botão mudar de largura no momento em que o dedo ainda está
+       nele.
+
+       A roda é `::before` porque o `::after` já é do `.btn-shine`, e há
+       botão de envio que usa os dois. */
+    .is-submitting {
+        opacity: 0.65;
+        cursor: wait;
+    }
+
+    .is-submitting::before {
+        content: '';
+        /* `inline-block` para o caso raro de o botão não ser flex: um
+           pseudo-elemento inline ignora width e height, e a roda sairia
+           como um risco. Dentro de um flex o display é convertido de
+           qualquer forma. */
+        display: inline-block;
+        width: 0.875rem;
+        height: 0.875rem;
+        margin-inline-end: 0.375rem;
+        border-radius: 9999px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        animation: fi-spin 0.6s linear infinite;
+        flex: none;
     }
 }
 
@@ -215,10 +284,43 @@
     .animate-pulse-soft,
     .animate-slide-up,
     .animate-marquee,
-    .btn-shine::after {
+    .btn-shine::after,
+    .is-submitting::before {
         opacity: 1 !important;
         transform: none !important;
         animation: none !important;
         transition: none !important;
     }
+}
+
+/* SweetAlert2 no tema do app.
+
+   Fica fora de qualquer `@layer`: dentro de um deles o Tailwind poda o que
+   não encontra no `content`, e estas classes são da biblioteca — não
+   aparecem em nenhuma view. Foi exatamente assim que este bloco sumiu do
+   build na primeira tentativa.
+
+   O CSS da biblioteca é injetado em tempo de execução pelo build `.all`,
+   portanto entra na página depois do arquivo compilado. Por isso os
+   seletores são um grau mais específicos que os dela: vencem pela
+   especificidade, e não pela ordem. Fundo, texto e botões vêm do JS; o que
+   sobra aqui são os detalhes que a biblioteca desenha para tema claro. */
+.swal2-popup .swal2-icon.swal2-warning {
+    border-color: rgb(248 113 113 / 0.4);
+}
+
+.swal2-popup .swal2-icon.swal2-question {
+    border-color: rgb(52 211 153 / 0.4);
+}
+
+.swal2-popup .swal2-title {
+    padding-top: 0;
+}
+
+.swal2-popup .swal2-close {
+    color: #5c8272;
+}
+
+.swal2-popup .swal2-close:hover {
+    color: #d7e3dc;
 }

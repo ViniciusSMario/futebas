@@ -1,0 +1,24 @@
+# Uma passada do agendador. Quem chama isto de minuto em minuto é o
+# .timer ao lado — este arquivo sozinho não faz nada além de rodar uma vez.
+#
+#   sudo cp deploy/systemd/futebas-scheduler.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now futebas-scheduler.timer
+#
+# `schedule:run` decide, a cada chamada, o que está na hora de rodar. Sem
+# ele: partida que ninguém encerrou fica aberta para sempre (e some da ficha
+# de presença de quem jogou), lembrete de véspera não sai, e SOS vencido não
+# avisa ninguém.
+
+[Unit]
+Description=Futebas - uma passada do agendador
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/futebas
+ExecStart=/usr/bin/php /var/www/futebas/artisan schedule:run
+
+StandardOutput=append:/var/log/futebas/scheduler.log
+StandardError=append:/var/log/futebas/scheduler.log

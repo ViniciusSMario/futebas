@@ -1,11 +1,23 @@
 import Alpine from 'alpinejs';
+import { initFormGuards } from './confirm';
+import { createInstallStore } from './install';
 import { createPushStore } from './push';
+import { createShareLink } from './share';
 
 window.Alpine = Alpine;
 
 // Web Push state, shared by the toggle component and any page that wants
 // to know whether this device is subscribed.
 Alpine.data('pushNotifications', createPushStore);
+
+// Convite de instalação. É store, e não `Alpine.data`, porque dois lugares
+// leem o mesmo estado: o cartão flutuante e a linha "Instalar o app" da
+// folha "Mais" — que existe justamente para quem dispensou o cartão.
+Alpine.store('install', createInstallStore());
+
+// Compartilhar o link público da partida: folha nativa onde existe, cópia
+// onde não existe.
+Alpine.data('shareLink', createShareLink);
 
 /**
  * Progressive Brazilian phone mask: (00) 0000-0000 / (00) 00000-0000.
@@ -195,5 +207,14 @@ function initScrollReveal() {
 }
 
 initScrollReveal();
+
+/**
+ * Confirmação das ações destrutivas e trava de envio duplo, delegadas no
+ * `document` — valem para todo formulário do app, inclusive os que chegam
+ * na página depois. Ficam antes do `Alpine.start()` porque o listener é de
+ * DOM puro e precisa estar de pé antes de qualquer coisa poder ser
+ * enviada.
+ */
+initFormGuards();
 
 Alpine.start();

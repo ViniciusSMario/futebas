@@ -16,7 +16,7 @@
     </div>
 
     <div class="pt-2 border-t border-pitch-800">
-        <p class="text-lg font-extrabold text-white">{{ $game->date->format('d/m/Y') }}</p>
+        <p class="text-lg font-extrabold text-white">{{ $game->dayLabel() }}</p>
         <p class="text-sm text-pitch-400 flex items-center gap-1">
             <x-heroicon-o-clock class="w-4 h-4 shrink-0" />
             {{ $game->start_time->format('H:i') }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif

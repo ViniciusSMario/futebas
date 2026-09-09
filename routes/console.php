@@ -1,12 +1,25 @@
 <?php
 
+use App\Console\Commands\HealthCheck;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// Carimbo de "o agendador passou por aqui".
+//
+// Sem isto não há como saber, de fora, que o cron parou: o app segue
+// respondendo 200 em toda página enquanto as partidas ficam abertas para
+// sempre. Uma escrita por minuto é o preço de a falha ter como aparecer —
+// e é `app:health` quem lê este carimbo.
+Schedule::call(fn () => Cache::forever(HealthCheck::HEARTBEAT, now()->toIso8601String()))
+    ->everyMinute()
+    ->name('scheduler-heartbeat')
+    ->withoutOverlapping();
 
 // Nothing runs a scheduler in this project yet, and weekly peladas don't
 // need one — the organizer opening their series tops the calendar up. This

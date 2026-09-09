@@ -3,21 +3,14 @@
 @php
     $isOrganizer = $role === 'organizer';
 
-    // Organizadores administram a partida na tela interna; jogadores não têm
-    // acesso a ela (a rota é do grupo `role:organizer`), então vão para o
-    // link público, que é a mesma partida vista de fora.
-    $href = $isOrganizer
-        ? route('games.show', $game)
-        : route('public-games.show', $game);
+    // A tela da partida agora é dos dois. O jogador ia parar no link
+    // público, que o mandava de volta para "Minhas Partidas" assim que
+    // reconhecia que ele já estava na partida — este cartão era um link
+    // que devolvia a pessoa para perto de onde ela saiu.
+    $href = route('games.show', $game);
 
-    $weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    $weekday = $weekdays[(int) $game->date->dayOfWeek];
-
-    $whenLabel = match (true) {
-        $game->date->isToday() => __('Hoje'),
-        $game->date->isTomorrow() => __('Amanhã'),
-        default => $weekday.', '.$game->date->format('d/m'),
-    };
+    $weekday = $game->weekdayShort();
+    $whenLabel = $game->dayLabel();
 
     $confirmed = $game->confirmedPlayersCount();
 @endphp
@@ -40,7 +33,14 @@
                 <p class="text-[11px] font-black uppercase tracking-widest text-emerald-400">
                     {{ $isOrganizer ? __('Sua próxima partida') : __('Você joga') }} · {{ $whenLabel }}
                 </p>
-                <p class="mt-1 text-lg sm:text-xl font-black text-white leading-tight truncate">{{ $game->location }}</p>
+                <p class="mt-1 text-lg sm:text-xl font-black text-white leading-tight truncate">{{ $game->team_name }}</p>
+                {{-- O `truncate` vai no <span> do texto, não no flex que o
+                     contém: num flex container ele não corta nada, e o
+                     nome comprido de uma quadra passaria por cima. --}}
+                <p class="mt-0.5 flex items-center gap-1 text-sm text-pitch-300">
+                    <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" />
+                    <span class="min-w-0 truncate">{{ $game->location }}</span>
+                </p>
                 <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-pitch-400">
                     <span class="flex items-center gap-1">
                         <x-heroicon-o-clock class="w-3.5 h-3.5 shrink-0" />

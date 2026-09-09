@@ -6,17 +6,25 @@
 
     $checkedIn = $confirmed->filter(fn ($gamePlayer) => $gamePlayer->hasCheckedIn());
     $missing = $confirmed->count() - $checkedIn->count();
+
+    // Pendentes e removidos são as duas listas que só existem para
+    // administrar — uma é fila de aprovação, a outra é histórico. Quem
+    // joga vê quem vai e quem está na espera, que é a pergunta que trouxe
+    // essa pessoa até aqui.
+    $viewer = $isOrganizer ? 'organizer' : 'participant';
 @endphp
 
 <div class="space-y-6">
-    <div class="flex flex-wrap items-center gap-3">
-        <a href="{{ route('game-players.create', $game) }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 transition">
-            <x-heroicon-o-user-plus class="w-4 h-4" /> {{ __('Adicionar Jogador') }}
-        </a>
-        <a href="{{ route('games.invitations.search', $game) }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-pitch-200 bg-pitch-800 border border-pitch-700 hover:bg-pitch-700 transition">
-            <x-heroicon-o-magnifying-glass class="w-4 h-4" /> {{ __('Buscar Jogadores') }}
-        </a>
-    </div>
+    @if ($isOrganizer)
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ route('game-players.create', $game) }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 transition">
+                <x-heroicon-o-user-plus class="w-4 h-4" /> {{ __('Adicionar Jogador') }}
+            </a>
+            <a href="{{ route('games.invitations.search', $game) }}" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-pitch-200 bg-pitch-800 border border-pitch-700 hover:bg-pitch-700 transition">
+                <x-heroicon-o-magnifying-glass class="w-4 h-4" /> {{ __('Buscar Jogadores') }}
+            </a>
+        </div>
+    @endif
 
     <x-slots-progress :current="$confirmed->count()" :max="$game->max_players" />
 
@@ -37,9 +45,11 @@
                     <x-badge color="emerald">{{ __('Todos confirmaram') }}</x-badge>
                 @endif
             </div>
-            <p class="mt-3 text-xs text-pitch-500">
-                {{ __('O check-in abre :hours horas antes do início e é feito pelo próprio jogador. Convidados sem cadastro não confirmam por aqui.', ['hours' => \App\Models\Game::CHECK_IN_OPENS_HOURS_BEFORE]) }}
-            </p>
+            @if ($isOrganizer)
+                <p class="mt-3 text-xs text-pitch-500">
+                    {{ __('O check-in abre :hours horas antes do início e é feito pelo próprio jogador. Convidados sem cadastro não confirmam por aqui.', ['hours' => \App\Models\Game::CHECK_IN_OPENS_HOURS_BEFORE]) }}
+                </p>
+            @endif
         </div>
     @endif
 
@@ -53,7 +63,12 @@
         @else
             <div class="space-y-3">
                 @foreach ($confirmed as $gamePlayer)
-                    <x-game-participant-row :game="$game" :gamePlayer="$gamePlayer" :actions="['payment', 'no-show', 'remove']" />
+                    <x-game-participant-row
+                        :game="$game"
+                        :gamePlayer="$gamePlayer"
+                        :viewer="$viewer"
+                        :actions="['payment', 'no-show', 'remove']"
+                    />
                 @endforeach
             </div>
         @endif
@@ -70,7 +85,12 @@
                     <div class="flex items-start gap-2">
                         <span class="mt-4 shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-pitch-800 text-xs font-bold text-pitch-400">{{ $index + 1 }}</span>
                         <div class="flex-1 min-w-0">
-                            <x-game-participant-row :game="$game" :gamePlayer="$gamePlayer" :actions="['confirm', 'remove']" />
+                            <x-game-participant-row
+                                :game="$game"
+                                :gamePlayer="$gamePlayer"
+                                :viewer="$viewer"
+                                :actions="['confirm', 'remove']"
+                            />
                         </div>
                     </div>
                 @endforeach
@@ -78,7 +98,7 @@
         </section>
     @endif
 
-    @if ($pending->isNotEmpty())
+    @if ($isOrganizer && $pending->isNotEmpty())
         <section>
             <div class="flex items-center gap-2 mb-3">
                 <h3 class="text-lg font-extrabold text-white">{{ __('Pendentes de Aprovação') }}</h3>
@@ -92,7 +112,7 @@
         </section>
     @endif
 
-    @if ($cancelled->isNotEmpty())
+    @if ($isOrganizer && $cancelled->isNotEmpty())
         <section>
             <div class="flex items-center gap-2 mb-3">
                 <h3 class="text-lg font-extrabold text-white">{{ __('Removidos') }}</h3>

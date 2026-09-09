@@ -29,6 +29,16 @@ class GameController extends Controller
     private const TABS = ['informacoes', 'participantes', 'convites', 'pagamentos', 'times'];
 
     /**
+     * O que a mesma tela mostra para quem só joga a partida.
+     *
+     * Convites e Pagamentos ficam de fora porque são as duas abas que
+     * existem para administrar: uma lista quem ainda não respondeu, a
+     * outra quem deve quanto. O resto — a partida, quem vai e como os
+     * times ficaram — é justamente o que faltava ao jogador.
+     */
+    private const PARTICIPANT_TABS = ['informacoes', 'participantes', 'times'];
+
+    /**
      * Date windows offered by the game search, mirroring the vocabulary
      * the player already knows from the availability filters.
      */
@@ -209,12 +219,35 @@ class GameController extends Controller
      */
     public function show(Request $request, Game $game, TeamDrawService $teams): View
     {
-        abort_unless($game->user_id === $request->user()->id, 403);
+        $user = $request->user();
+        $isOrganizer = $game->user_id === $user->id;
+
+        // Quem organiza administra a partida, quem joga precisa vê-la.
+        // Qualquer outra pessoa não tem o que fazer aqui: para essa existe
+        // o link público, que mostra a partida de fora e sem a lista de
+        // quem vai. Quem cancelou a própria participação, ou foi removido,
+        // deixa de ser participante e cai neste mesmo 403 — é o que
+        // `hasParticipant()` já significa em todo o resto do app.
+        abort_unless($isOrganizer || $game->hasParticipant($user), 403);
+
+        $tabs = $isOrganizer ? self::TABS : self::PARTICIPANT_TABS;
 
         $tab = $request->string('tab')->toString();
-        $tab = in_array($tab, self::TABS, true) ? $tab : 'informacoes';
+        $tab = in_array($tab, $tabs, true) ? $tab : 'informacoes';
 
-        $data = ['game' => $game, 'tab' => $tab];
+        $data = [
+            'game' => $game,
+            'tab' => $tab,
+            'tabs' => $tabs,
+            'isOrganizer' => $isOrganizer,
+            // A participação de quem está vendo, quando houver: é dela que
+            // saem o check-in e o cancelamento na aba Informações. Um
+            // organizador que também joga tem as duas coisas.
+            'viewerGamePlayer' => $game->gamePlayers()
+                ->where('user_id', $user->id)
+                ->whereNot('status', GamePlayer::STATUS_CANCELLED)
+                ->first(),
+        ];
 
         match ($tab) {
             'participantes' => [
