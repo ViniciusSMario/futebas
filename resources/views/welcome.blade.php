@@ -18,6 +18,8 @@
     <meta property="og:url" content="{{ url('/') }}">
     <meta property="og:image" content="{{ asset('images/landing/og-image.jpg') }}">
     <meta name="twitter:card" content="summary_large_image">
+    <link rel="canonical" href="{{ url('/') }}">
+    <link accesskey="" rel="shortcut icon" href="{{ asset('images/icons/favicon.ico') }}" type="image/x-icon">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet" />
@@ -34,6 +36,7 @@
         ['#como-funciona', __('Como funciona')],
         ['#recursos', __('Recursos')],
         ['#sos', __('SOS Goleiro')],
+        ['#planos', __('Planos')],
         ['#duvidas', __('Dúvidas')],
     ];
 @endphp
@@ -521,6 +524,52 @@
         </div>
     </section>
 
+    {{-- ==================== PLANOS ==================== --}}
+    <section id="planos" class="py-16 sm:py-24 scroll-mt-20">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="reveal text-center max-w-2xl mx-auto">
+                <span class="inline-block text-xs font-black uppercase tracking-widest text-emerald-400">{{ __('Planos') }}</span>
+                <h2 class="mt-3 text-3xl sm:text-4xl font-black tracking-tight text-white">
+                    {{ __('Comece de graça.') }}
+                    <span class="gradient-text">{{ __('Suba quando o jogo pedir.') }}</span>
+                </h2>
+                <p class="mt-4 text-base text-pitch-300 leading-relaxed">
+                    {{ __('Montar sua pelada, entrar em partidas e ter seu perfil de jogador não custa nada — e continua assim. Os planos pagos são para quem chama goleiro toda semana e quer ser achado primeiro.') }}
+                </p>
+            </div>
+
+            {{-- Os cartões saem do mesmo catálogo que o app aplica: o que
+                 está escrito aqui é literalmente o limite que vale lá
+                 dentro. --}}
+            <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-5">
+                @foreach (\App\Enums\Plan::catalog() as $index => $plan)
+                    <x-plan-card
+                        :plan="$plan"
+                        :featured="$plan->value === 'pro'"
+                        class="reveal"
+                        data-delay="{{ $index + 1 }}"
+                    >
+                        <x-slot name="action">
+                            @auth
+                                <a href="{{ route('subscription.index') }}" class="flex items-center justify-center gap-1.5 min-h-[48px] px-5 rounded-xl font-extrabold text-xs uppercase tracking-widest transition {{ $plan->isPaid() ? 'bg-emerald-400 text-pitch-950 hover:bg-emerald-300' : 'text-white border border-white/15 hover:bg-white/5' }}">
+                                    {{ $plan->isPaid() ? __('Assinar :plan', ['plan' => $plan->label()]) : __('Ir para o app') }}
+                                </a>
+                            @else
+                                <a href="{{ route('register') }}" class="flex items-center justify-center gap-1.5 min-h-[48px] px-5 rounded-xl font-extrabold text-xs uppercase tracking-widest transition {{ $plan->isPaid() ? 'bg-emerald-400 text-pitch-950 hover:bg-emerald-300' : 'text-white border border-white/15 hover:bg-white/5' }}">
+                                    {{ $plan->isPaid() ? __('Começar no :plan', ['plan' => $plan->label()]) : __('Criar conta grátis') }}
+                                </a>
+                            @endauth
+                        </x-slot>
+                    </x-plan-card>
+                @endforeach
+            </div>
+
+            <p class="reveal mt-8 text-center text-xs text-pitch-500" data-delay="4">
+                {{ __('Sem fidelidade: cancele quando quiser e use até o fim do período pago. O valor de cada partida continua sendo combinado entre você e o organizador.') }}
+            </p>
+        </div>
+    </section>
+
     {{-- ==================== DÚVIDAS ==================== --}}
     <section id="duvidas" class="py-16 sm:py-24 scroll-mt-20 bg-pitch-900/40 border-y border-white/5">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -531,7 +580,7 @@
 
             <div class="mt-10 space-y-3">
                 @foreach ([
-                    ['O Futebas é grátis?', 'É. Criar conta, montar a sua pelada e entrar em partidas não custa nada. O valor por jogo é combinado entre você e o organizador.'],
+                    ['O Futebas é grátis?', 'O plano Free é grátis para sempre: criar conta, montar a sua pelada e entrar em partidas não custa nada. Pro e Clube são para quem chama goleiro toda semana e quer aparecer primeiro na busca. O valor de cada jogo continua sendo combinado entre você e o organizador.'],
                     ['Preciso ter conta para entrar numa partida?', 'Não. O organizador pode compartilhar o link público da partida e você entra como convidado, só com nome e telefone.'],
                     ['Como funciona a lista de espera?', 'Quando a partida lota, quem chega depois entra na lista de espera. Se alguém desiste, a vaga é preenchida automaticamente e a pessoa é avisada.'],
                     ['Sou goleiro. Como recebo as chamadas de SOS?', 'Basta marcar "Goleiro" no seu perfil. A partir daí, toda chamada aberta na sua região chega no seu celular e você responde com o seu valor.'],
@@ -600,7 +649,7 @@
 
             <p class="reveal mt-5 text-xs text-pitch-400 flex items-center justify-center gap-1.5" data-delay="3">
                 <x-heroicon-o-check-badge class="w-4 h-4 text-emerald-400" />
-                {{ __('Sem mensalidade. Sem cartão de crédito.') }}
+                {{ __('Comece no plano grátis. Sem cartão de crédito.') }}
             </p>
         </div>
     </section>

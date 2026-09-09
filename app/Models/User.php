@@ -3,6 +3,9 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Feature;
+use App\Enums\Plan;
+use App\Services\PlanService;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -27,6 +30,9 @@ class User extends Authenticatable
 
     protected $attributes = [
         'role' => self::ROLE_PLAYER,
+        // Mesma razão do papel: a conta já nasce sabendo em que plano
+        // está, sem depender de reler o padrão do banco.
+        'plan' => Plan::FREE->value,
     ];
 
     public function hasRole(string $role): bool
@@ -45,6 +51,34 @@ class User extends Authenticatable
     }
 
     /**
+     * O plano que vale para este usuário agora.
+     *
+     * Pergunta à assinatura, não à coluna `plan`: só ela sabe se o período
+     * pago ainda está de pé. A coluna é uma cópia para a busca ordenar, e
+     * uma cópia atrasada nunca pode liberar um recurso.
+     */
+    public function currentPlan(): Plan
+    {
+        return $this->subscription?->effectivePlan() ?? Plan::default();
+    }
+
+    /** Está neste plano ou em um acima dele? */
+    public function onPlan(Plan $plan): bool
+    {
+        return $this->currentPlan()->covers($plan);
+    }
+
+    /**
+     * O plano libera este recurso? Vale para os recursos booleanos; os que
+     * têm teto mensal passam pelo {@see PlanService}, que
+     * precisa contar o uso do mês para responder.
+     */
+    public function planAllows(Feature $feature): bool
+    {
+        return $this->currentPlan()->allows($feature);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -54,7 +88,14 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'plan' => Plan::class,
         ];
+    }
+
+    /** A assinatura desta conta, se ela já teve alguma. */
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
     }
 
     public function playerProfile(): HasOne

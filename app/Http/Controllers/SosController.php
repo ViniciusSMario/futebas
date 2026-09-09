@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Feature;
+use App\Exceptions\PlanLimitReachedException;
 use App\Exceptions\SosRequestUnavailableException;
 use App\Http\Requests\SosPublishRequest;
 use App\Models\Game;
 use App\Models\SosApplication;
 use App\Models\SosRequest;
+use App\Services\PlanService;
 use App\Services\SosService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +24,10 @@ use Illuminate\View\View;
  */
 class SosController extends Controller
 {
-    public function __construct(private readonly SosService $sos) {}
+    public function __construct(
+        private readonly SosService $sos,
+        private readonly PlanService $plans,
+    ) {}
 
     /**
      * The organizer's own SOS calls, newest first.
@@ -57,6 +63,16 @@ class SosController extends Controller
     public function store(SosPublishRequest $request): RedirectResponse
     {
         $organizer = $request->user();
+
+        // O limite é conferido antes de qualquer coisa porque um SOS
+        // pode vir com uma partida nova descrita no mesmo formulário:
+        // deixar o serviço barrar mais adiante criaria a partida e não
+        // publicaria a chamada dela.
+        try {
+            $this->plans->ensureQuota($organizer, Feature::SOS_REQUESTS);
+        } catch (PlanLimitReachedException $exception) {
+            return back()->withInput()->with('error', $exception->getMessage());
+        }
 
         $game = $request->isForNewGame()
             ? Game::create([...$request->newGameAttributes(), 'user_id' => $organizer->id])

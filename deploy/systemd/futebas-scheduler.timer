@@ -1,0 +1,20 @@
+# Chama o agendador a cada minuto — o equivalente systemd da linha de cron
+# que o Laravel pede. Um minuto é a granularidade que `schedule:run` espera:
+# ele mesmo decide o que está na hora.
+
+[Unit]
+Description=Futebas - chama o agendador a cada minuto
+
+[Timer]
+OnCalendar=*:0/1
+AccuracySec=10s
+
+# Sem Persistent: uma passada perdida enquanto a máquina estava desligada
+# não deve ser recuperada em rajada. Os avisos guiados pelo relógio já
+# guardam o que foi enviado (games.reminded_24h_at e companhia), mas
+# disparar tudo de uma vez na volta é o caminho mais curto para ensinar
+# alguém a desligar as notificações.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

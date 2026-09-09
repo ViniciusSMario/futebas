@@ -6,31 +6,19 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            @if (session('status') === 'series-created')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Pelada criada! As próximas partidas já estão no calendário.') }}
-                </p>
-            @elseif (session('status') === 'member-added')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Mensalista adicionado e já incluído nas partidas marcadas.') }}
-                </p>
-            @elseif (session('status') === 'member-removed')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Mensalista removido da série. Ele continua nas partidas que já foram criadas.') }}
-                </p>
-            @elseif (session('status') === 'series-ended')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Pelada encerrada. Nenhuma partida nova será criada.') }}
-                </p>
-            @endif
-
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <x-badge :color="$series->isActive() ? 'emerald' : 'gray'">
                     {{ $series->isActive() ? __('Ativa') : __('Encerrada') }}
                 </x-badge>
 
                 @if ($series->isActive())
-                    <form method="post" action="{{ route('game-series.end', $series) }}" onsubmit="return confirm('{{ __('Encerrar essa pelada? As partidas já marcadas continuam valendo, mas nenhuma nova será criada.') }}')">
+                    <form
+                        method="post"
+                        action="{{ route('game-series.end', $series) }}"
+                        data-confirm="{{ __('Encerrar essa pelada semanal?') }}"
+                        data-confirm-text="{{ __('As partidas já marcadas continuam valendo e ninguém perde a vaga nelas. O que para é a criação das próximas.') }}"
+                        data-confirm-button="{{ __('Encerrar') }}"
+                    >
                         @csrf
                         @method('PATCH')
                         <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition">
@@ -62,7 +50,7 @@
                                 </div>
 
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-bold text-white">{{ $game->date->format('d/m/Y') }}</p>
+                                    <p class="font-bold text-white">{{ $game->dayLabel() }}</p>
                                     <p class="text-xs text-pitch-400 flex items-center gap-1">
                                         <x-heroicon-o-clock class="w-3.5 h-3.5 shrink-0" />
                                         {{ $game->start_time->format('H:i') }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
@@ -107,7 +95,13 @@
                                     @endif
                                 </p>
 
-                                <form method="post" action="{{ route('game-series.members.destroy', [$series, $member]) }}" onsubmit="return confirm('{{ __('Remover esse mensalista da série?') }}')">
+                                <form
+                                    method="post"
+                                    action="{{ route('game-series.members.destroy', [$series, $member]) }}"
+                                    data-confirm="{{ __('Remover esse mensalista?') }}"
+                                    data-confirm-text="{{ __('Ele deixa de entrar automaticamente nas próximas partidas da série. As em que já está seguem valendo.') }}"
+                                    data-confirm-button="{{ __('Remover') }}"
+                                >
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide text-red-300 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition">

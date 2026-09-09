@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\When;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -12,7 +13,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-#[Fillable(['user_id', 'game_series_id', 'team_name', 'location', 'city', 'modality', 'date', 'start_time', 'end_time', 'max_players', 'price', 'positions', 'description', 'requires_approval', 'status'])]
+#[Fillable(['user_id', 'game_series_id', 'team_name', 'location', 'city', 'state', 'modality', 'date', 'start_time', 'end_time', 'max_players', 'price', 'positions', 'description', 'requires_approval', 'status'])]
 class Game extends Model
 {
     public const POSITIONS = PlayerProfile::POSITIONS;
@@ -33,6 +34,28 @@ class Game extends Model
      * at 7h that morning.
      */
     public const CHECK_IN_OPENS_HOURS_BEFORE = 12;
+
+    /**
+     * Folga entre o fim previsto e a finalização automática.
+     *
+     * Existe por dois motivos concretos. Partida atrasa, e fechar no
+     * minuto do fim previsto pegaria gente ainda em campo. E `finishesAt()`
+     * cai para o horário de *início* quando o organizador não informou o
+     * término — sem folga, essas partidas seriam finalizadas no apito
+     * inicial. Três horas cobrem a pelada mais longa com sobra.
+     */
+    public const AUTO_FINISH_GRACE_HOURS = 3;
+
+    /**
+     * Quantas horas antes do início cada lembrete sai.
+     *
+     * O da véspera casa de propósito com o corte de
+     * {@see self::isCancellableByPlayer()}: quem for desistir ainda
+     * consegue liberar a vaga a tempo de alguém pegar.
+     */
+    public const REMINDER_EARLY_HOURS = 24;
+
+    public const REMINDER_LATE_HOURS = 2;
 
     protected static function booted(): void
     {
@@ -57,6 +80,8 @@ class Game extends Model
             'price' => 'decimal:2',
             'positions' => 'array',
             'requires_approval' => 'boolean',
+            'reminded_24h_at' => 'datetime',
+            'reminded_2h_at' => 'datetime',
         ];
     }
 
@@ -66,16 +91,29 @@ class Game extends Model
      * with a time component and `start_time` as a bare time, so both
      * comparisons go through whereDate/whereTime to stay portable between
      * MySQL (dev) and SQLite (tests).
+     *
+     * O `where` de fora parece repetir o bloco de dentro, e repete mesmo:
+     * ele existe para o índice `(status, date)`. `whereDate` embrulha a
+     * coluna em `date(...)`, e coluna dentro de função é coluna que nenhum
+     * índice alcança — a busca de partidas leria a tabela inteira todo dia,
+     * índice ou não. Esta comparação simples corta o passado usando o
+     * índice, e o bloco abaixo continua decidindo o caso exato. Não muda
+     * resultado: os dois ramos do OR implicam `date >= hoje`, então o
+     * recorte nunca descarta linha que o OR aceitaria.
      */
     public function scopeUpcoming(Builder $query): Builder
     {
-        return $query->where(function (Builder $query) {
-            $query->whereDate('date', '>', today())
-                ->orWhere(fn (Builder $query) => $query
-                    ->whereDate('date', today())
-                    ->whereTime('start_time', '>=', now())
-                );
-        });
+        $today = today()->toDateString();
+
+        return $query
+            ->where('date', '>=', $today)
+            ->where(function (Builder $query) use ($today) {
+                $query->whereDate('date', '>', $today)
+                    ->orWhere(fn (Builder $query) => $query
+                        ->whereDate('date', $today)
+                        ->whereTime('start_time', '>=', now())
+                    );
+            });
     }
 
     public function user(): BelongsTo
@@ -110,6 +148,33 @@ class Game extends Model
     }
 
     /**
+     * Quem já não faz sentido aparecer numa busca de jogadores para
+     * convidar: quem está na partida e quem tem convite esperando resposta.
+     * Convidar de novo não é um erro grave, mas é ruído — e o organizador
+     * que vê o mesmo nome duas vezes na lista fica na dúvida se mandou.
+     *
+     * Participante convidado tem `user_id` nulo: um único null dentro de um
+     * NOT IN torna a comparação inteira nula, e a busca esvaziaria sozinha
+     * assim que a partida tivesse um convidado sem conta.
+     *
+     * @return array<int, int>
+     */
+    public function excludedInviteeIds(): array
+    {
+        return $this->gamePlayers()
+            ->where('status', '!=', GamePlayer::STATUS_CANCELLED)
+            ->whereNotNull('user_id')
+            ->pluck('user_id')
+            ->concat(
+                $this->invitations()->where('status', Invitation::STATUS_PENDING)->pluck('user_id')
+            )
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Registered users taking part in this match — the audience for
      * anything that changes about it. Guest contacts have no account to
      * notify, and the organizer is excluded since they're the one making
@@ -124,6 +189,32 @@ class Game extends Model
             ->where('status', '!=', GamePlayer::STATUS_CANCELLED)
             ->where('user_id', '!=', $this->user_id)
             ->pluck('user_id');
+
+        return User::query()->whereIn('id', $userIds)->get();
+    }
+
+    /**
+     * Quem deve ser lembrado da partida: os confirmados com conta, mais o
+     * organizador.
+     *
+     * O organizador entra aqui — e é excluído de
+     * {@see self::notifiableParticipants()} — porque a regra de lá é "não
+     * avise ninguém sobre a própria ação". Um lembrete não é ação de
+     * ninguém: é o relógio, e o dono da pelada também esquece dela.
+     *
+     * Só confirmados: para quem está na lista de espera ou aguardando
+     * aprovação, "sua partida é amanhã" seria mentira.
+     *
+     * @return EloquentCollection<int, User>
+     */
+    public function reminderRecipients(): EloquentCollection
+    {
+        $userIds = $this->gamePlayers()
+            ->whereNotNull('user_id')
+            ->where('status', GamePlayer::STATUS_CONFIRMED)
+            ->pluck('user_id')
+            ->push($this->user_id)
+            ->unique();
 
         return User::query()->whereIn('id', $userIds)->get();
     }
@@ -252,6 +343,48 @@ class Game extends Model
     }
 
     /**
+     * A abreviação do dia da semana: "Sáb".
+     */
+    public function weekdayShort(): string
+    {
+        return When::weekdayShort($this->date);
+    }
+
+    /**
+     * O dia da partida como alguém marca pelada: "Hoje", "Amanhã",
+     * "Sáb, 12/09".
+     */
+    public function dayLabel(): string
+    {
+        return When::day($this->date);
+    }
+
+    /**
+     * O dia e a hora numa linha só: "Sáb, 12/09 · 20:00".
+     */
+    public function whenLabel(): string
+    {
+        return When::dayAndTime($this->startsAt());
+    }
+
+    /**
+     * O endereço num link que abre o mapa do celular.
+     *
+     * `location` é texto livre ("Quadra do Zé"), então o que se manda para
+     * o mapa é ele mais cidade e estado — sem isso "Society Central" cai
+     * em qualquer uma das cinco cidades com esse nome. A busca do Google
+     * Maps é a rota certa aqui: o `geo:` nativo não existe no iOS e um
+     * link de coordenadas exigiria geocodificar um endereço que a pessoa
+     * digitou à mão.
+     */
+    public function mapUrl(): string
+    {
+        $query = implode(', ', array_filter([$this->location, $this->city, $this->state]));
+
+        return 'https://www.google.com/maps/search/?api=1&query='.rawurlencode($query);
+    }
+
+    /**
      * Whether a confirmed player may still cancel their own participation:
      * only allowed until 24 hours before the match starts.
      */
@@ -295,5 +428,52 @@ class Game extends Model
     public function isEligibleToFinish(): bool
     {
         return $this->status === 'open' && now()->greaterThanOrEqualTo($this->finishesAt());
+    }
+
+    /**
+     * Close the match: the one operation, wherever the decision came from.
+     *
+     * Lives on the model because there are now two callers — the organizer
+     * pressing "finalizar" and the `games:finish` routine — and a match
+     * finished by the clock has to become exactly the same thing as one
+     * finished by hand. Settling attendance here is the point: a match only
+     * enters anyone's record once it is finished.
+     */
+    public function finish(): void
+    {
+        $this->update(['status' => self::STATUS_FINISHED]);
+
+        $this->refreshParticipantStats();
+    }
+
+    /**
+     * Whether this match may be closed *without anyone asking* — the
+     * scheduled end plus {@see self::AUTO_FINISH_GRACE_HOURS}.
+     *
+     * Deliberately stricter than {@see self::isEligibleToFinish()}: the
+     * organizer pressing "finalizar" knows the match is over, while the
+     * clock only suspects it.
+     */
+    public function isEligibleToAutoFinish(): bool
+    {
+        return $this->status === self::STATUS_OPEN
+            && now()->greaterThanOrEqualTo($this->finishesAt()->addHours(self::AUTO_FINISH_GRACE_HOURS));
+    }
+
+    /**
+     * Matches the auto-finish routine needs to look at.
+     *
+     * Coarse on purpose: the exact moment is a date column plus a time
+     * column, and MySQL and SQLite spell that sum differently, so the cut
+     * is made in PHP by `isEligibleToAutoFinish()`. This only narrows the
+     * candidates to open matches that could already be over.
+     *
+     * @param  Builder<Game>  $query
+     * @return Builder<Game>
+     */
+    public function scopeAwaitingAutoFinish(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_OPEN)
+            ->whereDate('date', '<=', now()->toDateString());
     }
 }

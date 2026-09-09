@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\PlayerProfile;
+use App\Rules\CityInState;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,7 @@ class PlayerProfileUpdateRequest extends FormRequest
             'photo' => ['nullable', 'image', 'max:2048'],
             'birth_date' => ['required', 'date', 'before:today'],
             'state' => ['required', 'string', Rule::in(array_keys(PlayerProfile::STATES))],
-            'city' => ['required', 'string', 'max:255'],
+            'city' => ['required', 'string', 'max:255', new CityInState($this->input('state'))],
             'phone' => ['required', 'string', 'max:20'],
             'position_primary' => ['required', 'string', Rule::in(PlayerProfile::POSITIONS)],
             'positions_secondary' => ['array'],

@@ -22,6 +22,8 @@
             </a>
         </header>
 
+        <x-flash />
+
         <main class="py-8 sm:py-12">
             {{ $slot }}
         </main>

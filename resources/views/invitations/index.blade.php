@@ -5,16 +5,6 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-            @if (session('status') === 'invitation-accepted')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Convite aceito! A partida foi adicionada às suas partidas confirmadas.') }}
-                </p>
-            @elseif (session('status') === 'invitation-declined')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-pitch-300">
-                    <x-heroicon-o-x-circle class="w-4 h-4" /> {{ __('Convite recusado.') }}
-                </p>
-            @endif
-
             <section>
                 <div class="flex items-center gap-2 mb-4">
                     <h3 class="text-lg font-extrabold text-white">{{ __('Pendentes') }}</h3>
@@ -37,7 +27,7 @@
                                     </div>
                                     <div class="flex justify-between gap-2">
                                         <dt class="text-pitch-500 flex items-center gap-1"><x-heroicon-o-calendar-days class="w-4 h-4" /> {{ __('Data') }}</dt>
-                                        <dd class="font-semibold">{{ $game->date->format('d/m') }}</dd>
+                                        <dd class="font-semibold">{{ $game->dayLabel() }}</dd>
                                     </div>
                                     <div class="flex justify-between gap-2">
                                         <dt class="text-pitch-500 flex items-center gap-1"><x-heroicon-o-clock class="w-4 h-4" /> {{ __('Horário') }}</dt>
@@ -103,7 +93,7 @@
                             <div class="flex items-center justify-between gap-3 bg-pitch-900 rounded-2xl border border-pitch-800 p-4">
                                 <div class="min-w-0">
                                     <p class="font-bold text-white truncate">{{ $invitation->team ?? $game->team_name }}</p>
-                                    <p class="text-sm text-pitch-400">{{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }} &middot; {{ $game->location }}</p>
+                                    <p class="text-sm text-pitch-400">{{ $game->whenLabel() }} &middot; {{ $game->location }}</p>
                                 </div>
                                 <x-badge :color="$isAccepted ? 'emerald' : 'gray'">{{ $isAccepted ? __('Aceito') : __('Recusado') }}</x-badge>
                             </div>

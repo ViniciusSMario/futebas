@@ -38,7 +38,7 @@
                                                 <span class="font-bold text-emerald-400 shrink-0">R$ {{ number_format((float) $game->price, 2, ',', '.') }}</span>
                                             </div>
                                             <p class="text-sm text-pitch-300 mt-0.5">
-                                                {{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
+                                                {{ $game->whenLabel() }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
                                             </p>
                                             <p class="text-sm text-pitch-400 flex items-center gap-1 mt-0.5">
                                                 <x-heroicon-o-map-pin class="w-4 h-4 shrink-0" /> {{ $game->location }}, {{ $game->city }}
@@ -79,7 +79,7 @@
                             </div>
                         </section>
 
-                        <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                        <div class="flex items-center gap-4 sticky-action">
                             <button type="submit" class="inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition">
                                 {{ __('Enviar Convite') }}
                             </button>

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Availability;
+use App\Models\Game;
+use App\Models\Invitation;
 use App\Models\PlayerProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,6 +37,25 @@ class PlayerSearchTest extends TestCase
     private function organizer(): User
     {
         return User::factory()->organizer()->create();
+    }
+
+    private function createGame(User $organizer): Game
+    {
+        return Game::create([
+            'user_id' => $organizer->id,
+            'team_name' => 'Amigos FC',
+            'location' => 'Arena X',
+            'city' => 'Teresina',
+            'state' => 'PI',
+            'modality' => 'Society',
+            'date' => now()->addDays(3)->format('Y-m-d'),
+            'start_time' => '20:00',
+            'end_time' => '21:00',
+            'max_players' => 10,
+            'price' => '50.00',
+            'positions' => ['Goleiro'],
+            'status' => Game::STATUS_OPEN,
+        ]);
     }
 
     public function test_guests_cannot_access_player_search(): void
@@ -96,7 +117,9 @@ class PlayerSearchTest extends TestCase
         $this->createPlayer(['name' => 'Jogador SP', 'city' => 'São Paulo']);
         $this->createPlayer(['name' => 'Jogador RJ', 'city' => 'Rio de Janeiro']);
 
-        $response = $this->actingAs($viewer)->get('/players/search?city=Rio');
+        // O filtro virou select do catálogo do IBGE, então o valor chega
+        // inteiro e a comparação é exata: meia palavra não filtra mais nada.
+        $response = $this->actingAs($viewer)->get('/players/search?city=Rio+de+Janeiro');
 
         $response->assertSee('Jogador RJ');
         $response->assertDontSee('Jogador SP');
@@ -173,5 +196,83 @@ class PlayerSearchTest extends TestCase
         $response->assertSee('Meia, Volante');
         $response->assertSee('Campo');
         $response->assertSee('Intermediário');
+    }
+
+    public function test_can_find_a_player_by_part_of_the_name(): void
+    {
+        $viewer = $this->organizer();
+        $this->createPlayer(['name' => 'Gustavo Lima']);
+        $this->createPlayer(['name' => 'Carlos Andrade']);
+
+        $response = $this->actingAs($viewer)->get('/players/search?q=gust');
+
+        $response->assertOk();
+        $response->assertSee('Gustavo Lima');
+        $response->assertDontSee('Carlos Andrade');
+    }
+
+    public function test_searching_for_a_game_hides_who_is_already_invited(): void
+    {
+        $viewer = $this->organizer();
+        $game = $this->createGame($viewer);
+
+        $convidado = $this->createPlayer(['name' => 'Ja Convidado']);
+        $livre = $this->createPlayer(['name' => 'Ainda Livre']);
+
+        Invitation::create([
+            'game_id' => $game->id,
+            'organizer_id' => $viewer->id,
+            'user_id' => $convidado->user_id,
+            'status' => Invitation::STATUS_PENDING,
+        ]);
+
+        $response = $this->actingAs($viewer)->get('/players/search?game='.$game->id);
+
+        $response->assertOk();
+        $response->assertDontSee('Ja Convidado');
+        $response->assertSee('Ainda Livre');
+        // Com partida em vista o card convida, em vez de só levar ao perfil.
+        $response->assertSee(route('games.invitations.store', [$game, $livre]), false);
+    }
+
+    public function test_another_organizers_game_is_ignored_as_search_context(): void
+    {
+        $viewer = $this->organizer();
+        $alheio = $this->createGame($this->organizer());
+
+        $inGame = $this->createPlayer(['name' => 'Jogador Alheio']);
+        $alheio->gamePlayers()->create([
+            'user_id' => $inGame->user_id,
+            'status' => 'confirmed',
+            'payment_status' => 'pending',
+            'amount_due' => '0.00',
+            'joined_at' => now(),
+        ]);
+
+        // A partida não é dele: o contexto simplesmente não vale, e a busca
+        // volta a ser a busca comum - nada de esconder gente por causa de uma
+        // partida que ele não organiza.
+        $response = $this->actingAs($viewer)->get('/players/search?game='.$alheio->id);
+
+        $response->assertOk();
+        $response->assertSee('Jogador Alheio');
+    }
+
+    public function test_advanced_filters_stay_folded_when_none_is_set(): void
+    {
+        $response = $this->actingAs($this->organizer())->get('/players/search?position=Goleiro');
+
+        $response->assertOk();
+        $response->assertSee('advanced: false', false);
+    }
+
+    public function test_advanced_filters_unfold_when_one_of_them_is_set(): void
+    {
+        // Um filtro valendo e escondido é a forma mais rápida de a busca
+        // parecer quebrada: com "Nível" aplicado, o painel abre sozinho.
+        $response = $this->actingAs($this->organizer())->get('/players/search?level=Avançado');
+
+        $response->assertOk();
+        $response->assertSee('advanced: true', false);
     }
 }

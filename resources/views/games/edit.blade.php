@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header icon="heroicon-o-pencil-square" :title="__('Editar Game')" :subtitle="$game->team_name" />
+        <x-page-header icon="heroicon-o-pencil-square" :title="__('Editar Partida')" :subtitle="$game->team_name" />
     </x-slot>
 
     @php
@@ -20,7 +20,7 @@
                         </h3>
 
                         <div>
-                            <x-input-label for="team_name" :value="__('Nome do Game')" />
+                            <x-input-label for="team_name" :value="__('Nome da partida')" />
                             <x-text-input id="team_name" name="team_name" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('team_name', $game->team_name)" required autofocus />
                             <x-input-error class="mt-2" :messages="$errors->get('team_name')" />
                         </div>
@@ -74,11 +74,11 @@
                                 <x-input-error class="mt-2" :messages="$errors->get('location')" />
                             </div>
 
-                            <div>
-                                <x-input-label for="city" :value="__('Cidade')" />
-                                <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('city', $game->city)" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                            </div>
+                            <x-city-select
+                                :state="old('state', $game->state ?? Auth::user()->state)"
+                                :city="old('city', $game->city)"
+                                required
+                            />
                         </div>
                     </section>
 
@@ -126,7 +126,7 @@
                         </div>
                     </section>
 
-                    <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                    <div class="flex items-center gap-4 sticky-action">
                         <button type="submit" class="inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition">
                             {{ __('Salvar Alterações') }}
                         </button>

@@ -81,6 +81,10 @@
                                         {{ __('Minha Conta') }}
                                     </x-dropdown-link>
 
+                                    <x-dropdown-link :href="route('subscription.index')">
+                                        {{ __('Meu plano') }}
+                                    </x-dropdown-link>
+
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
 
@@ -112,6 +116,17 @@
             </div>
         </div>
 
+        {{-- Um lugar só para o retorno de qualquer ação. Fica fora do
+             `<main>` porque é fixo na tela: a confirmação não pode depender
+             de onde a página estava rolada quando a pessoa apertou o
+             botão. --}}
+        <x-flash />
+
         @include('layouts.bottom-nav')
+
+        {{-- Fica depois da barra inferior porque se posiciona em relação a
+             ela: o cartão precisa passar por cima do botão elevado, não por
+             baixo. --}}
+        <x-install-prompt />
     </body>
 </html>

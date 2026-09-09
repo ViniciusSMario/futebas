@@ -16,37 +16,16 @@
                 &larr; {{ __('Meus SOS') }}
             </a>
 
-            @if (session('error'))
-                <p class="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 flex items-start gap-2">
-                    <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" /> {{ session('error') }}
-                </p>
-            @endif
-
-            @if (session('status') === 'sos-published')
-                <p class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-medium text-emerald-300 flex items-start gap-2">
-                    <x-heroicon-o-check-circle class="w-5 h-5 shrink-0" />
-                    {{ trans_choice('SOS publicado! Avisamos :count goleiro da região.|SOS publicado! Avisamos :count goleiros da região.', $sosRequest->notified_count, ['count' => $sosRequest->notified_count]) }}
-                </p>
-            @elseif (session('status') === 'sos-accepted')
-                <p class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-medium text-emerald-300 flex items-start gap-2">
-                    <x-heroicon-o-check-circle class="w-5 h-5 shrink-0" /> {{ __('Goleiro confirmado na partida. Os demais candidatos foram avisados.') }}
-                </p>
-            @elseif (session('status') === 'sos-rejected')
-                <p class="text-sm font-medium text-pitch-300">{{ __('Candidatura recusada.') }}</p>
-            @elseif (session('status') === 'sos-cancelled')
-                <p class="text-sm font-medium text-pitch-300">{{ __('SOS cancelado.') }}</p>
-            @endif
-
             {{-- The call --}}
             <section class="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 text-white p-5 sm:p-6 shadow-lg shadow-red-500/20">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="text-xs font-bold uppercase tracking-widest text-red-50">{{ __('Sua chamada') }}</p>
-                        <p class="mt-1 text-lg sm:text-xl font-extrabold">
-                            {{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }} &middot; {{ $game->modality }}
-                        </p>
-                        <p class="mt-1 text-sm text-red-50 flex items-center gap-1">
-                            <x-heroicon-o-map-pin class="w-4 h-4 shrink-0" /> {{ $game->location }}, {{ $game->city }}
+                        <p class="mt-1 text-lg sm:text-xl font-extrabold">{{ $game->team_name }}</p>
+                        <p class="mt-0.5 text-base font-bold text-white">{{ $game->whenLabel() }} &middot; {{ $game->modality }}</p>
+                        <p class="mt-1 text-sm text-red-50 flex items-start gap-1">
+                            <x-heroicon-o-map-pin class="w-4 h-4 shrink-0 mt-0.5" />
+                            <a href="{{ $game->mapUrl() }}" target="_blank" rel="noopener" class="underline decoration-white/40 underline-offset-2 hover:decoration-white break-words">{{ $game->location }}, {{ $game->city }}</a>
                         </p>
                     </div>
 
@@ -59,11 +38,7 @@
                         <x-heroicon-o-paper-airplane class="w-4 h-4" />
                         {{ trans_choice(':count goleiro avisado|:count goleiros avisados', $sosRequest->notified_count, ['count' => $sosRequest->notified_count]) }}
                     </span>
-                    @if ($sosRequest->expires_at)
-                        <span class="text-red-50 flex items-center gap-1">
-                            <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Até') }} {{ $sosRequest->expires_at->format('d/m H:i') }}
-                        </span>
-                    @endif
+                    <x-sos-deadline :sos-request="$sosRequest" tone="on-dark" />
                 </div>
 
                 @if ($sosRequest->message)
@@ -76,7 +51,13 @@
                 <h3 class="text-sm font-bold uppercase tracking-wide text-pitch-400">{{ __('Candidaturas') }}</h3>
 
                 @if ($isLive)
-                    <form method="post" action="{{ route('sos.cancel', $sosRequest) }}" onsubmit="return confirm('{{ __('Cancelar este SOS? Os candidatos pendentes serão avisados.') }}')">
+                    <form
+                        method="post"
+                        action="{{ route('sos.cancel', $sosRequest) }}"
+                        data-confirm="{{ __('Cancelar esta chamada?') }}"
+                        data-confirm-text="{{ __('Os goleiros que se candidataram são avisados de que a busca foi encerrada. A partida continua de pé.') }}"
+                        data-confirm-button="{{ __('Cancelar chamada') }}"
+                    >
                         @csrf
                         @method('patch')
                         <button type="submit" class="text-xs font-bold uppercase tracking-widest text-pitch-400 hover:text-red-400 transition">{{ __('Cancelar SOS') }}</button>

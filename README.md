@@ -103,10 +103,29 @@ npm run build                  # build de produção
 php artisan migrate            # aplica migrations
 php artisan series:generate    # gera as próximas partidas das peladas semanais
 php artisan webpush:vapid      # gera um par de chaves VAPID
+
+php artisan app:health         # a fila e o agendador estão mesmo rodando?
 ```
 
 O banco de desenvolvimento é MySQL (`foot_interior_db`); os testes rodam em SQLite na
 memória, então **nunca tocam no banco de desenvolvimento**.
+
+---
+
+## Colocando no ar
+
+Servir o PHP **não** é colocar o app no ar. São três processos, e dois deles falham
+calados: sem `queue:work` as notificações param na tabela `jobs` sem erro nenhum, e sem
+`schedule:run` a cada minuto as partidas nunca encerram — o que apaga a presença de todo
+mundo que jogou, que é justamente por onde a busca de jogadores ordena.
+
+O passo a passo, os arquivos de systemd e supervisor prontos em [`deploy/`](deploy/), e o
+que fazer depois de cada deploy estão em **[`docs/deploy.md`](docs/deploy.md)**. Para saber
+se está tudo de pé:
+
+```bash
+php artisan app:health   # sai com código 1 quando algo parou
+```
 
 ---
 

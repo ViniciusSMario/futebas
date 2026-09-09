@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Plan;
 use App\Models\Availability;
 use App\Models\Game;
 use App\Models\GamePlayer;
@@ -15,6 +16,7 @@ use App\Models\User;
 use App\Notifications\InvitationReceived;
 use App\Services\GamePlayerService;
 use App\Services\GameSeriesService;
+use App\Services\PlanService;
 use App\Services\SosService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Seeder;
@@ -82,6 +84,7 @@ class DemoSeeder extends Seeder
         $this->organizer = $this->createOrganizer('Ricardo Nunes', 'organizador@futebas.test');
         $this->rivalOrganizer = $this->createOrganizer('Sandra Aguiar', 'sandra@futebas.test');
         $this->players = $this->createRoster();
+        $this->seedPlans();
 
         $this->seedHistory();
         $this->seedFinishedMatchAwaitingRatings();
@@ -94,6 +97,24 @@ class DemoSeeder extends Seeder
         $this->recomputeReputations();
 
         $this->command?->info('Demo pronta. Entre com organizador@futebas.test, jogador@futebas.test ou goleiro@futebas.test — senha: '.self::PASSWORD);
+    }
+
+    /**
+     * Uma assinatura de cada lado, para a demo mostrar os planos em uso e
+     * não só na página de preços: o organizador com SOS de sobra, e o
+     * goleiro aparecendo em destaque na busca de jogadores.
+     */
+    private function seedPlans(): void
+    {
+        $plans = app(PlanService::class);
+
+        $plans->assign($this->organizer, Plan::PRO);
+
+        $goalkeeper = $this->players->firstWhere('email', 'goleiro@futebas.test');
+
+        if ($goalkeeper !== null) {
+            $plans->assign($goalkeeper, Plan::PRO);
+        }
     }
 
     private function createOrganizer(string $name, string $email): User
@@ -258,13 +279,22 @@ class DemoSeeder extends Seeder
      */
     private function seedTodaysMatch(): void
     {
+        // Daqui a algumas horas, mas com data e hora combinando: somar 5h
+        // depois das 19h escreve "00:xx" mantendo a data de hoje, ou seja,
+        // uma partida de hoje que já aconteceu — e aí o check-in que esta
+        // demo existe para mostrar nasce fechado.
         $kickoff = now()->addHours(5);
+        $lastSlotToday = today()->setTime(23, 0);
+
+        if ($kickoff->greaterThan($lastSlotToday)) {
+            $kickoff = $lastSlotToday->isFuture() ? $lastSlotToday : now()->addHour();
+        }
 
         $game = $this->createGame([
             'user_id' => $this->organizer->id,
             'team_name' => 'Futebas da Semana',
             'location' => 'Arena Society Dirceu',
-            'date' => today()->format('Y-m-d'),
+            'date' => $kickoff->format('Y-m-d'),
             'start_time' => $kickoff->format('H:i'),
             'end_time' => $kickoff->copy()->addHours(2)->format('H:i'),
             'max_players' => 12,
@@ -364,6 +394,7 @@ class DemoSeeder extends Seeder
             'team_name' => 'Pelada de Quinta',
             'location' => 'Arena Society Dirceu',
             'city' => self::CITY,
+            'state' => self::STATE,
             'modality' => 'Society',
             'day_of_week' => Carbon::THURSDAY,
             'start_time' => '19:00',
@@ -494,6 +525,7 @@ class DemoSeeder extends Seeder
     {
         return Game::create(array_merge([
             'city' => self::CITY,
+            'state' => self::STATE,
             'modality' => 'Society',
             'positions' => [],
             'requires_approval' => false,

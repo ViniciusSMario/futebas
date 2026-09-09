@@ -10,7 +10,7 @@
         </div>
 
         @if ($invitations->isEmpty())
-            <x-empty-state icon="heroicon-o-envelope-open" :title="__('Nenhum convite pendente.')" :description="__('Busque jogadores cadastrados e convide para esse Game.')" />
+            <x-empty-state icon="heroicon-o-envelope-open" :title="__('Nenhum convite pendente.')" :description="__('Busque jogadores cadastrados e convide para essa partida.')" />
         @else
             <div class="space-y-3">
                 @foreach ($invitations as $invitation)

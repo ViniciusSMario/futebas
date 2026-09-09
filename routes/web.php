@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AvailabilityController;
+use App\Http\Controllers\CityController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\GamePlayerController;
@@ -16,25 +17,58 @@ use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RatingController;
 use App\Http\Controllers\SosController;
 use App\Http\Controllers\SosOpportunityController;
+use App\Http\Controllers\StripeWebhookController;
+use App\Http\Controllers\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+// Municípios de um estado, para o select de cidade. Pública: o cadastro
+// precisa dela antes de existir conta.
+Route::get('/cidades/{uf}', [CityController::class, 'index'])
+    ->middleware('throttle:cities')
+    ->name('cities.index');
+
 // Public game link — no authentication required, so a Game's organizer can
 // share it with anyone (WhatsApp, Instagram, etc).
-Route::get('/g/{game:slug}', [PublicGameController::class, 'show'])->name('public-games.show');
-Route::get('/g/{game:slug}/participar', [PublicGameController::class, 'join'])->name('public-games.join');
-Route::get('/g/{game:slug}/entrar', [PublicGameController::class, 'redirectToLogin'])->name('public-games.login');
-Route::post('/g/{game:slug}/participar-sem-cadastro', [PublicGameController::class, 'joinAsGuest'])->name('public-games.join-guest');
+//
+// Toda rota daqui é alcançável por quem não tem conta, então cada uma leva
+// seu limite: os limitadores estão em AppServiceProvider, com o motivo de
+// cada número. Entrar sem cadastro é a única que grava, e por isso é a mais
+// apertada — e a única contada por partida, não só por IP.
+Route::middleware('throttle:public-game')->group(function () {
+    Route::get('/g/{game:slug}', [PublicGameController::class, 'show'])->name('public-games.show');
+    Route::get('/g/{game:slug}/participar', [PublicGameController::class, 'join'])->name('public-games.join');
+    Route::get('/g/{game:slug}/entrar', [PublicGameController::class, 'redirectToLogin'])->name('public-games.login');
+
+    Route::post('/g/{game:slug}/participar-sem-cadastro', [PublicGameController::class, 'joinAsGuest'])
+        ->middleware('throttle:guest-join')
+        ->name('public-games.join-guest');
+});
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+
+// O Stripe avisando o que aconteceu com uma assinatura. Sem sessão e sem
+// CSRF (dispensado em bootstrap/app.php): a prova de origem é a assinatura
+// HMAC do corpo, conferida no controller.
+Route::post('/webhooks/stripe', [StripeWebhookController::class, 'handle'])->name('webhooks.stripe');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Planos e assinatura. Não entram em nenhum grupo de papel: jogador e
+    // organizador assinam o mesmo catálogo, cada um esbarrando nos limites
+    // que fazem sentido para o seu lado.
+    Route::get('/planos', [SubscriptionController::class, 'index'])->name('subscription.index');
+    Route::post('/planos/{plan}/assinar', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('/planos/obrigado', [SubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/planos/gerenciar', [SubscriptionController::class, 'portal'])->name('subscription.portal');
+    // Só responde em ambiente local e sem cobrança configurada.
+    Route::post('/planos/{plan}/simular', [SubscriptionController::class, 'simulate'])->name('subscription.simulate');
 
     // Push notifications are per-device and role-agnostic: the service
     // worker registers on any authenticated page.
@@ -55,6 +89,18 @@ Route::middleware('auth')->group(function () {
     // of the role groups.
     Route::post('/games/{game}/presenca', [GamePlayerController::class, 'checkIn'])->name('games.check-in');
     Route::delete('/games/{game}/presenca', [GamePlayerController::class, 'undoCheckIn'])->name('games.check-in.undo');
+
+    // A tela da partida é compartilhada: o organizador administra, quem
+    // joga vê. Sem ela o jogador não tinha partida nenhuma para abrir —
+    // sabia da pelada só o que cabia no cartão de "Minhas Partidas", e nem
+    // quem mais ia, nem o time sorteado, nem o endereço para chegar lá.
+    // Quem decide o que cada um enxerga é o controller; o middleware não
+    // serve aqui porque os dois papéis entram pela mesma porta.
+    //
+    // O `whereNumber` não é enfeite: este grupo é registrado antes do
+    // grupo do organizador, então sem ele `/games/create` casaria com
+    // `/games/{game}` e a ação principal de quem organiza viraria um 404.
+    Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show')->whereNumber('game');
 
     // Player-only: sports profile, availability, invitations received.
     Route::middleware('role:player')->group(function () {
@@ -86,7 +132,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/games', [GameController::class, 'store'])->name('games.store');
         Route::patch('/games/{game}/finish', [GameController::class, 'finish'])->name('games.finish');
 
-        Route::get('/games/{game}', [GameController::class, 'show'])->name('games.show');
         Route::get('/games/{game}/editar', [GameController::class, 'edit'])->name('games.edit');
         Route::patch('/games/{game}', [GameController::class, 'update'])->name('games.update');
         Route::patch('/games/{game}/cancelar', [GameController::class, 'cancel'])->name('games.cancel');

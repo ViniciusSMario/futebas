@@ -11,12 +11,6 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            @if (session('status') === 'series-ended')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Pelada encerrada. As partidas já marcadas continuam valendo.') }}
-                </p>
-            @endif
-
             @if ($series->isEmpty())
                 <x-empty-state icon="heroicon-o-arrow-path" :title="__('Nenhuma pelada semanal ainda')"
                     :description="__('Cadastre a sua pelada de toda semana uma única vez: as partidas passam a ser criadas sozinhas e os mensalistas já entram confirmados.')">
@@ -57,7 +51,7 @@
                                     {{ trans_choice(':count mensalista|:count mensalistas', $one->members_count, ['count' => $one->members_count]) }}
                                 </span>
                                 @if ($next)
-                                    <span class="font-bold text-emerald-400">{{ __('Próxima: :date', ['date' => $next->date->format('d/m')]) }}</span>
+                                    <span class="font-bold text-emerald-400">{{ __('Próxima: :date', ['date' => $next->dayLabel()]) }}</span>
                                 @endif
                             </div>
                         </a>

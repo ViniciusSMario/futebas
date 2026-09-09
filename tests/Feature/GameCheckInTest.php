@@ -27,6 +27,7 @@ class GameCheckInTest extends TestCase
             'team_name' => 'Furacão FC',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => $start->format('Y-m-d'),
             'start_time' => $start->format('H:i'),

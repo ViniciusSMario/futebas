@@ -24,6 +24,7 @@ class GameStoreTest extends TestCase
             'end_time' => '20:00',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'price' => '25.00',
             'max_players' => 20,
             'positions' => ['Goleiro', 'Zagueiro'],
@@ -44,6 +45,24 @@ class GameStoreTest extends TestCase
         $response = $this->actingAs($organizer)->get('/games/create');
 
         $response->assertOk();
+        // A partida da quarta-feira se marca com o formulário como ele abre:
+        // os ajustes começam dobrados.
+        $response->assertSee('advanced: false', false);
+    }
+
+    public function test_rejected_field_inside_the_folded_panel_comes_back_visible(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        // `end_time` mora atrás de "Ajustes da partida". Recusar sem abrir a
+        // dobra seria um formulário que diz não sem dizer onde.
+        $response = $this->actingAs($organizer)
+            ->from('/games/create')
+            ->followingRedirects()
+            ->post('/games', $this->validPayload(['start_time' => '19:00', 'end_time' => '18:00']));
+
+        $response->assertOk();
+        $response->assertSee('advanced: true', false);
     }
 
     public function test_player_cannot_access_the_create_game_page(): void

@@ -29,15 +29,43 @@
                     <div class="absolute inset-0 bg-gradient-to-r from-emerald-700/95 via-emerald-800/90 to-pitch-950/90"></div>
                 </div>
 
-                <div class="relative flex items-center gap-4 p-5 sm:p-7">
-                    <x-avatar :user="Auth::user()" size="lg" ring="ring-2 ring-white/20" class="hidden xs:flex" />
-                    <div class="min-w-0">
-                        <h2 class="text-xl sm:text-3xl font-black text-white truncate">
-                            {{ __('Olá, :name!', ['name' => Str::before(Auth::user()->name, ' ')]) }}
-                        </h2>
-                        <p class="mt-1 text-sm sm:text-base text-emerald-50/90 font-medium">
-                            {{ __('Seu futebol. Sua região. Sua partida.') }}
-                        </p>
+                <div class="relative p-5 sm:p-7">
+                    <div class="flex items-center gap-4">
+                        <x-avatar :user="Auth::user()" size="lg" ring="ring-2 ring-white/20" class="hidden xs:flex" />
+                        <div class="min-w-0">
+                            <h2 class="text-xl sm:text-3xl font-black text-white truncate">
+                                {{ __('Olá, :name!', ['name' => Str::before(Auth::user()->name, ' ')]) }}
+                            </h2>
+                            <p class="mt-1 text-sm sm:text-base text-emerald-50/90 font-medium">
+                                {{ __('Seu futebol. Sua região. Sua partida.') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- As duas coisas que o organizador abre o app para fazer,
+                         lado a lado e antes de qualquer número: marcar a
+                         partida e achar quem falta - quase sempre o goleiro.
+                         Tudo o mais nesta tela é acompanhamento. --}}
+                    <div class="mt-5 grid grid-cols-2 gap-3">
+                        <a href="{{ route('games.create') }}" class="group flex flex-col justify-between gap-2 rounded-2xl bg-white p-4 min-h-[104px] shadow-lg shadow-black/20 active:scale-[0.98] transition">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-700">
+                                <x-heroicon-s-plus class="w-6 h-6" />
+                            </span>
+                            <span>
+                                <span class="block text-base font-black leading-tight text-pitch-950">{{ __('Criar Partida') }}</span>
+                                <span class="block text-xs font-medium text-pitch-500">{{ __('Marque a próxima pelada') }}</span>
+                            </span>
+                        </a>
+
+                        <a href="{{ route('players.search', ['position' => 'Goleiro']) }}" class="group flex flex-col justify-between gap-2 rounded-2xl bg-pitch-950/40 border border-white/20 backdrop-blur p-4 min-h-[104px] active:scale-[0.98] transition">
+                            <span class="flex items-center justify-center w-10 h-10 rounded-xl bg-white/15 text-white">
+                                <x-heroicon-s-hand-raised class="w-6 h-6" />
+                            </span>
+                            <span>
+                                <span class="block text-base font-black leading-tight text-white">{{ __('Achar Goleiro') }}</span>
+                                <span class="block text-xs font-medium text-emerald-50/70">{{ __('Goleiros da sua região') }}</span>
+                            </span>
+                        </a>
                     </div>
                 </div>
             </section>
@@ -138,9 +166,10 @@
             <section>
                 <x-section-heading :title="__('Acesso rápido')" icon="heroicon-o-bolt" />
 
+                {{-- Criar partida e achar goleiro saíram daqui: viraram os dois
+                     botões do topo. O que sobra é o acompanhamento. --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <x-action-card :href="route('players.search')" icon="heroicon-o-magnifying-glass" color="emerald" :title="__('Procurar Jogadores')" :description="__('Filtre por posição, nível e valor')" />
-                    <x-action-card :href="route('games.create')" icon="heroicon-o-plus-circle" color="blue" :title="__('Criar Partida')" :description="__('Organize uma nova pelada')" />
                     <x-action-card :href="route('game-series.index')" icon="heroicon-o-arrow-path" color="violet" :title="__('Peladas Semanais')" :description="__('Sua pelada fixa, gerada sozinha')" />
                     <x-action-card :href="route('games.mine')" icon="heroicon-o-trophy" color="gray" :title="__('Minhas Partidas')" :description="__('Acompanhe e finalize os jogos')" />
                 </div>

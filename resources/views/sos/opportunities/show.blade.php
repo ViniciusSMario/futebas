@@ -16,27 +16,23 @@
                 &larr; {{ __('Voltar') }}
             </a>
 
-            @if (session('error'))
-                <p class="rounded-xl bg-amber-500/10 border border-amber-500/30 px-4 py-3 text-sm font-medium text-amber-300 flex items-start gap-2">
-                    <x-heroicon-o-exclamation-triangle class="w-5 h-5 shrink-0" /> {{ session('error') }}
-                </p>
-            @endif
-
-            @if (session('status') === 'sos-applied')
-                <p class="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-3 text-sm font-medium text-emerald-300 flex items-start gap-2">
-                    <x-heroicon-o-check-circle class="w-5 h-5 shrink-0" /> {{ __('Candidatura enviada! O organizador vai comparar as propostas e avisamos você da decisão.') }}
-                </p>
-            @endif
+            {{-- O limite de candidaturas do mês, para o goleiro saber onde
+                 está antes de mandar mais uma. --}}
+            <x-quota-notice :feature="\App\Enums\Feature::SOS_APPLICATIONS" />
 
             {{-- The call --}}
             <section class="rounded-2xl bg-gradient-to-r from-red-600 to-orange-500 text-white p-5 sm:p-6 shadow-lg shadow-red-500/20">
                 <p class="text-xs font-bold uppercase tracking-widest text-red-50">🧤 {{ __('Precisa-se de goleiro') }}</p>
-                <p class="mt-1 text-lg sm:text-xl font-extrabold">
-                    {{ $game->date->format('d/m/Y') }} &middot; {{ $game->start_time->format('H:i') }}
-                    @if ($game->end_time) – {{ $game->end_time->format('H:i') }} @endif
+                <p class="mt-1 text-lg sm:text-xl font-extrabold">{{ $game->team_name }}</p>
+                <p class="mt-0.5 text-base font-bold text-white">
+                    {{ $game->whenLabel() }}@if ($game->end_time)–{{ $game->end_time->format('H:i') }}@endif
                 </p>
-                <p class="mt-1 text-sm text-red-50 flex items-center gap-1">
-                    <x-heroicon-o-map-pin class="w-4 h-4 shrink-0" /> {{ $game->location }}, {{ $game->city }}
+                {{-- O endereço vira link de mapa: o goleiro está decidindo se
+                     atravessa a cidade por essa quantia, e a distância é
+                     metade da decisão. --}}
+                <p class="mt-1 text-sm text-red-50 flex items-start gap-1">
+                    <x-heroicon-o-map-pin class="w-4 h-4 shrink-0 mt-0.5" />
+                    <a href="{{ $game->mapUrl() }}" target="_blank" rel="noopener" class="underline decoration-white/40 underline-offset-2 hover:decoration-white break-words">{{ $game->location }}, {{ $game->city }}</a>
                 </p>
 
                 <div class="mt-4 pt-4 border-t border-white/20 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
@@ -44,6 +40,12 @@
                     <span class="text-red-50"> {{ $game->modality }}</span>
                     <span class="text-red-50">{{ __('Organizador') }}: {{ $sosRequest->organizer->name }}</span>
                 </div>
+
+                @if ($isLive)
+                    <div class="mt-3">
+                        <x-sos-deadline :sos-request="$sosRequest" tone="on-dark" />
+                    </div>
+                @endif
 
                 @if ($sosRequest->message)
                     <p class="mt-3 text-sm text-red-50 italic">"{{ $sosRequest->message }}"</p>

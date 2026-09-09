@@ -49,7 +49,7 @@ class PublicGameController extends Controller
         if (! $game->isOpen()) {
             return redirect()
                 ->route('public-games.show', $game)
-                ->withErrors(['game' => __('Esse Game não está mais aberto para novos participantes.')]);
+                ->with('error', __('Essa partida não está mais aberta para novos participantes.'));
         }
 
         if (! $request->user()) {
@@ -88,7 +88,7 @@ class PublicGameController extends Controller
         if (! $game->isOpen()) {
             return redirect()
                 ->route('public-games.show', $game)
-                ->withErrors(['game' => __('Esse Game não está mais aberto para novos participantes.')]);
+                ->with('error', __('Essa partida não está mais aberta para novos participantes.'));
         }
 
         $validated = $request->validated();

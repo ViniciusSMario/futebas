@@ -21,12 +21,6 @@
                 &larr; {{ __('Voltar para a busca') }}
             </a>
 
-            @if (session('status') === 'invitation-sent')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Convite enviado com sucesso!') }}
-                </p>
-            @endif
-
             {{-- Player card --}}
             <div class="space-y-3">
                 <x-player-card :player-profile="$playerProfile" />

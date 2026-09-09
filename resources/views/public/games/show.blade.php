@@ -1,26 +1,6 @@
 <x-public-layout>
     <div class="max-w-xl mx-auto px-4 sm:px-6">
         <div class="bg-pitch-900 rounded-3xl border border-pitch-800 shadow-lg shadow-black/30 p-6 sm:p-8 space-y-6">
-            @if (session('status') === 'joined-confirmed' || session('status') === 'joined-game')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Você está confirmado nesse Game!') }}
-                </p>
-            @elseif (session('status') === 'joined-pending')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Pedido enviado! Aguarde a confirmação do organizador.') }}
-                </p>
-            @elseif (session('status') === 'joined-waiting-list')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-clock class="w-4 h-4" /> {{ __('Game lotado, você entrou na lista de espera.') }}
-                </p>
-            @endif
-
-            @if ($errors->any())
-                <p class="flex items-center gap-1.5 text-sm font-medium text-red-400">
-                    <x-heroicon-o-x-circle class="w-4 h-4" /> {{ $errors->first() }}
-                </p>
-            @endif
-
             <div>
                 <x-badge :color="match ($game->status) {
                     'open' => 'emerald',
@@ -42,7 +22,7 @@
             <dl class="text-sm text-pitch-200 space-y-2.5 py-4 border-y border-pitch-800">
                 <div class="flex justify-between gap-2">
                     <dt class="text-pitch-500 flex items-center gap-1"><x-heroicon-o-calendar-days class="w-4 h-4" /> {{ __('Data') }}</dt>
-                    <dd class="font-semibold">{{ $game->date->format('d/m/Y') }}</dd>
+                    <dd class="font-semibold">{{ $game->dayLabel() }}</dd>
                 </div>
                 <div class="flex justify-between gap-2">
                     <dt class="text-pitch-500 flex items-center gap-1"><x-heroicon-o-clock class="w-4 h-4" /> {{ __('Horário') }}</dt>
@@ -112,7 +92,7 @@
                 @endauth
             @else
                 <p class="text-center text-sm font-semibold text-pitch-400">
-                    {{ __('Esse Game não está mais aceitando participantes.') }}
+                    {{ __('Essa partida não está mais aceitando participantes.') }}
                 </p>
             @endif
         </div>

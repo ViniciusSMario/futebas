@@ -15,7 +15,7 @@
         </p>
         @if ($isFull)
             <span class="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wide text-red-400">
-                <x-heroicon-o-lock-closed class="w-3.5 h-3.5" /> {{ __('Game lotado') }}
+                <x-heroicon-o-lock-closed class="w-3.5 h-3.5" /> {{ __('Partida lotada') }}
             </span>
         @else
             <span class="text-xs font-semibold text-emerald-400">

@@ -79,11 +79,11 @@
                                 <x-text-input id="location" name="location" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('location')" required placeholder="{{ __('Ex: Arena Society') }}" />
                                 <x-input-error class="mt-2" :messages="$errors->get('location')" />
                             </div>
-                            <div>
-                                <x-input-label for="city" :value="__('Cidade')" />
-                                <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('city', Auth::user()->city)" required />
-                                <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                            </div>
+                            <x-city-select
+                                :state="old('state', Auth::user()->state)"
+                                :city="old('city', Auth::user()->city)"
+                                required
+                            />
                             <div>
                                 <x-input-label for="max_players" :value="__('Máximo de jogadores')" />
                                 <x-text-input id="max_players" name="max_players" type="number" min="2" max="100" class="mt-1 block w-full rounded-lg focus:border-emerald-500 focus:ring-emerald-500" :value="old('max_players', 14)" required />

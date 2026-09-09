@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Models\Game;
 use App\Models\SosRequest;
+use App\Rules\CityInState;
+use App\Support\Cities;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -43,7 +45,8 @@ class SosPublishRequest extends FormRequest
             'start_time' => [$this->requiredForNewGame(), 'nullable', 'date_format:H:i'],
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'location' => [$this->requiredForNewGame(), 'nullable', 'string', 'max:255'],
-            'city' => [$this->requiredForNewGame(), 'nullable', 'string', 'max:255'],
+            'state' => [$this->requiredForNewGame(), 'nullable', 'string', Rule::in(array_keys(Cities::states()))],
+            'city' => [$this->requiredForNewGame(), 'nullable', 'string', 'max:255', new CityInState($this->input('state'))],
             'modality' => [$this->requiredForNewGame(), 'nullable', Rule::in(Game::MODALITIES)],
 
             'offered_value' => ['required', 'numeric', 'min:0', 'max:99999.99'],
@@ -82,6 +85,7 @@ class SosPublishRequest extends FormRequest
             'team_name' => $this->string('team_name')->value(),
             'location' => $this->string('location')->value(),
             'city' => $this->string('city')->value(),
+            'state' => $this->string('state')->value(),
             'modality' => $this->string('modality')->value(),
             'date' => $this->date('date'),
             'start_time' => $this->string('start_time')->value(),

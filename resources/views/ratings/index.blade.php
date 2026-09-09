@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header icon="heroicon-o-star" :title="__('Avaliar Jogadores')" :subtitle="$game->team_name.' · '.$game->date->format('d/m/Y')" />
+        <x-page-header icon="heroicon-o-star" :title="__('Avaliar Jogadores')" :subtitle="$game->team_name.' · '.$game->whenLabel()" />
     </x-slot>
 
     <div class="py-6 sm:py-8">
@@ -8,16 +8,6 @@
             <a href="{{ route('games.mine') }}" class="inline-flex items-center gap-1 text-sm font-medium text-pitch-400 hover:text-white">
                 &larr; {{ __('Voltar para Minhas Partidas') }}
             </a>
-
-            @if (session('status') === 'rating-saved')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-emerald-400">
-                    <x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Avaliação salva com sucesso.') }}
-                </p>
-            @elseif (session('status') === 'already-rated')
-                <p class="flex items-center gap-1.5 text-sm font-medium text-amber-400">
-                    <x-heroicon-o-information-circle class="w-4 h-4" /> {{ __('Você já avaliou este jogador nesta partida.') }}
-                </p>
-            @endif
 
             @if ($participants->isEmpty())
                 <x-empty-state icon="heroicon-o-user-group" :title="__('Nenhum jogador confirmado nesta partida.')" />

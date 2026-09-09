@@ -3,33 +3,28 @@
     $isGoalkeeper = Auth::user()->isGoalkeeper();
 @endphp
 
-{{-- Ação principal flutuante. Só o organizador tem uma ação de "criar":
-     o jogador entra em partidas que já existem, e a busca dele já é uma
-     aba - um botão duplicando a aba seria só ruído. --}}
-@unless ($isPlayer)
-    @unless (request()->routeIs('games.create'))
-        <a
-            href="{{ route('games.create') }}"
-            class="lg:hidden fixed right-4 z-40 flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-400 text-pitch-950 shadow-xl shadow-emerald-500/30 active:scale-95 transition"
-            style="bottom: calc(5.25rem + env(safe-area-inset-bottom));"
-            aria-label="{{ __('Criar Partida') }}"
-        >
-            <x-heroicon-o-plus class="w-7 h-7" />
-        </a>
-    @endunless
-@endunless
-
 <nav
     x-data="{ moreOpen: false }"
     class="lg:hidden fixed bottom-0 inset-x-0 z-40 bg-pitch-900/95 backdrop-blur-xl border-t border-pitch-800"
     style="padding-bottom: env(safe-area-inset-bottom);"
     aria-label="{{ __('Navegação principal') }}"
 >
-    <div class="grid grid-cols-5">
+    {{-- A vaga do meio é elevada e guarda o gesto que a pessoa veio fazer:
+         o organizador cria uma partida, o jogador procura uma. Tudo o mais
+         é navegação; por isso só esses dois saem da fileira. --}}
+    <div class="grid grid-cols-5 w-full">
         @if ($isPlayer)
             <x-bottom-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="heroicon-o-home">{{ __('Início') }}</x-bottom-nav-link>
-            <x-bottom-nav-link :href="route('games.search')" :active="request()->routeIs('games.search')" icon="heroicon-o-magnifying-glass">{{ __('Buscar') }}</x-bottom-nav-link>
             <x-bottom-nav-link :href="route('games.mine')" :active="request()->routeIs('games.mine')" icon="heroicon-o-trophy">{{ __('Partidas') }}</x-bottom-nav-link>
+
+            <x-bottom-nav-dock
+                :href="route('games.search')"
+                :active="request()->routeIs('games.search')"
+                icon="heroicon-s-magnifying-glass"
+                :label="__('Buscar')"
+                :aria-label="__('Procurar Partidas')"
+            />
+
             {{-- Only one slot left before "Mais": a goalkeeper gets SOS,
                  everyone else gets invitations. Whichever loses the slot is
                  picked up by the "Mais" sheet below. --}}
@@ -40,8 +35,18 @@
             @endif
         @else
             <x-bottom-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" icon="heroicon-o-home">{{ __('Início') }}</x-bottom-nav-link>
-            <x-bottom-nav-link :href="route('players.search')" :active="request()->routeIs('players.search') || request()->routeIs('players.show')" icon="heroicon-o-magnifying-glass">{{ __('Buscar') }}</x-bottom-nav-link>
-            <x-bottom-nav-link :href="route('sos.index')" :active="request()->routeIs('sos.*')" icon="heroicon-o-megaphone">{{ __('SOS') }}</x-bottom-nav-link>
+            {{-- "Jogadores" e não "Buscar": para quem organiza, procurar é
+                 sempre procurar gente - e quase sempre um goleiro. --}}
+            <x-bottom-nav-link :href="route('players.search')" :active="request()->routeIs('players.search') || request()->routeIs('players.show')" icon="heroicon-o-magnifying-glass">{{ __('Jogadores') }}</x-bottom-nav-link>
+
+            <x-bottom-nav-dock
+                :href="route('games.create')"
+                :active="request()->routeIs('games.create')"
+                icon="heroicon-s-plus"
+                :label="__('Criar')"
+                :aria-label="__('Criar Partida')"
+            />
+
             <x-bottom-nav-link :href="route('games.mine')" :active="request()->routeIs('games.mine')" icon="heroicon-o-trophy">{{ __('Partidas') }}</x-bottom-nav-link>
         @endif
 
@@ -100,7 +105,11 @@
                         ['ratings.show', route('ratings.show', Auth::user()->id), 'heroicon-o-star', __('Avaliações')],
                     ]))
                     : [
-                        ['games.create', route('games.create'), 'heroicon-o-plus-circle', __('Criar Partida')],
+                        // O SOS deixou a barra para a vaga do meio ficar com
+                        // "Criar", mas continua a uma toque de distância aqui,
+                        // no painel e na própria busca de jogadores - e quem
+                        // se candidatou já avisou por notificação.
+                        ['sos.*', route('sos.index'), 'heroicon-o-megaphone', __('SOS Goleiro')],
                         ['game-series.*', route('game-series.index'), 'heroicon-o-arrow-path', __('Peladas Semanais')],
                     ];
             @endphp
@@ -118,6 +127,35 @@
                         {{ $label }}
                     </a>
                 @endforeach
+
+                <a
+                    href="{{ route('subscription.index') }}"
+                    @click="moreOpen = false"
+                    class="flex items-center gap-3 rounded-xl px-3 min-h-[52px] text-base font-semibold transition {{ request()->routeIs('subscription.*') ? 'bg-emerald-500/10 text-emerald-300' : 'text-pitch-200 active:bg-pitch-800' }}"
+                >
+                    <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-pitch-800 text-pitch-300 shrink-0">
+                        <x-heroicon-o-sparkles class="w-5 h-5" />
+                    </span>
+                    <span class="flex-1">{{ __('Meu plano') }}</span>
+                    <x-plan-badge :plan="Auth::user()->currentPlan()" />
+                </a>
+
+                {{-- Só aparece para quem ainda pode instalar: some sozinha
+                     dentro do app instalado, e existe porque dispensar o
+                     cartão não pode virar beco sem saída - no iPhone não há
+                     prompt do navegador para reaparecer por conta própria. --}}
+                <button
+                    x-cloak
+                    x-show="$store.install.available"
+                    type="button"
+                    @click="moreOpen = false; $store.install.show()"
+                    class="flex items-center gap-3 rounded-xl px-3 min-h-[52px] text-base font-semibold text-pitch-200 active:bg-pitch-800 transition"
+                >
+                    <span class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 shrink-0">
+                        <x-heroicon-o-arrow-down-tray class="w-5 h-5" />
+                    </span>
+                    {{ __('Instalar o app') }}
+                </button>
 
                 <a
                     href="{{ route('notifications.index') }}"

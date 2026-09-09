@@ -42,6 +42,7 @@ class SosAlreadyInGameTest extends TestCase
             'team_name' => 'Furacão FC',
             'location' => 'Arena Society Central',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDays(3)->format('Y-m-d'),
             'start_time' => '19:00',
@@ -219,7 +220,11 @@ class SosAlreadyInGameTest extends TestCase
 
         $this->join($game, $inGame);
 
-        $response = $this->actingAs($organizer)->get(route('games.invitations.search', $game));
+        // A rota da partida hoje leva à busca de jogadores com ela em vista;
+        // quem responde é `players.search`, e é lá que a exclusão vale.
+        $response = $this->actingAs($organizer)
+            ->followingRedirects()
+            ->get(route('games.invitations.search', $game));
 
         $response->assertOk();
         $response->assertDontSee('Goleiro Dentro');
@@ -242,7 +247,9 @@ class SosAlreadyInGameTest extends TestCase
             'joined_at' => now(),
         ]);
 
-        $response = $this->actingAs($organizer)->get(route('games.invitations.search', $game));
+        $response = $this->actingAs($organizer)
+            ->followingRedirects()
+            ->get(route('games.invitations.search', $game));
 
         $response->assertOk();
         $response->assertSee('Goleiro Livre');

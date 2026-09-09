@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\PlanLimitReachedException;
 use App\Exceptions\SosRequestUnavailableException;
 use App\Http\Requests\SosApplicationRequest;
 use App\Models\GamePlayer;
@@ -99,6 +100,9 @@ class SosOpportunityController extends Controller
      */
     public function store(SosApplicationRequest $request, SosRequest $sosRequest): RedirectResponse
     {
+        // Chamada que fechou e limite do plano que acabou são a mesma
+        // conversa para quem está aqui: um recado na tela, e a página
+        // continua de pé.
         try {
             $this->sos->apply(
                 $sosRequest,
@@ -106,7 +110,7 @@ class SosOpportunityController extends Controller
                 (float) $request->input('asking_price'),
                 $request->input('message'),
             );
-        } catch (SosRequestUnavailableException $exception) {
+        } catch (SosRequestUnavailableException|PlanLimitReachedException $exception) {
             return back()->with('error', $exception->getMessage());
         }
 
@@ -159,10 +163,10 @@ class SosOpportunityController extends Controller
                     $region->where('city', $profile->city);
 
                     if ($profile->plays_outside_city && filled($state)) {
-                        // Travelling players also see calls from organizers
-                        // in their state.
-                        $region->orWhereHas('user', fn (Builder $organizer) => $organizer
-                            ->where('state', $state));
+                        // Travelling players also see calls from anywhere in
+                        // their state — the match's state, the same column
+                        // SosService::candidatesInRegion() reads.
+                        $region->orWhere('state', $state);
                     }
                 });
             });

@@ -20,6 +20,21 @@ class WelcomeTest extends TestCase
         $response->assertSee('Faltou jogador?');
     }
 
+    public function test_landing_page_shows_the_three_plans_with_their_real_limits(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+        $response->assertSeeInOrder(['Free', 'Pro', 'Clube']);
+        $response->assertSee('19,90');
+        $response->assertSee('79,90');
+        // As linhas saem do mesmo catálogo que o app aplica, então a
+        // vitrine não tem como prometer um limite diferente do cobrado.
+        $response->assertSee('1 SOS Goleiro por mês');
+        $response->assertSee('10 SOS Goleiro por mês');
+        $response->assertSee('Tudo do Pro');
+    }
+
     public function test_landing_page_links_to_the_existing_login_and_register_routes(): void
     {
         $response = $this->get('/');

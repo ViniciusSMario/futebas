@@ -5,6 +5,11 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            {{-- Quanto ainda cabe no plano deste mês. Aparece antes do
+                 formulário porque descobrir que acabou depois de preencher
+                 tudo é a pior hora de descobrir. --}}
+            <x-quota-notice :feature="\App\Enums\Feature::SOS_REQUESTS" class="mb-5" />
+
             <form
                 method="post"
                 action="{{ route('sos.store') }}"
@@ -59,7 +64,7 @@
                                 <option value="">{{ __('Selecione...') }}</option>
                                 @foreach ($games as $game)
                                     <option value="{{ $game->id }}" @selected((int) old('game_id') === $game->id)>
-                                        {{ $game->date->format('d/m') }} {{ $game->start_time->format('H:i') }} - {{ $game->team_name }} ({{ $game->location }}, {{ $game->city }})
+                                        {{ $game->team_name }} — {{ $game->whenLabel() }} ({{ $game->location }}, {{ $game->city }})
                                     </option>
                                 @endforeach
                             </select>
@@ -101,11 +106,13 @@
                                     <x-input-error class="mt-2" :messages="$errors->get('location')" />
                                 </div>
 
-                                <div>
-                                    <x-input-label for="city" :value="__('Cidade')" />
-                                    <x-text-input id="city" name="city" type="text" class="mt-1 block w-full rounded-lg" :value="old('city')" />
-                                    <x-input-error class="mt-2" :messages="$errors->get('city')" />
-                                </div>
+                                {{-- Estado e cidade do IBGE. O SOS depende disso mais
+                                     que qualquer outra tela: é por cidade e estado que
+                                     ele decide quais goleiros avisar. --}}
+                                <x-city-select
+                                    :state="old('state', Auth::user()->state)"
+                                    :city="old('city')"
+                                />
                             </div>
 
                             <div>
@@ -151,7 +158,7 @@
                         <p>{{ __('Ao publicar, todos os goleiros cadastrados na região da partida recebem uma notificação. As candidaturas ficam pendentes até você escolher uma.') }}</p>
                     </div>
 
-                    <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                    <div class="flex items-center gap-4 sticky-action">
                         <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 shadow-lg shadow-red-500/30 transition">
                             <x-heroicon-o-megaphone class="w-4 h-4" /> {{ __('Publicar SOS') }}
                         </button>

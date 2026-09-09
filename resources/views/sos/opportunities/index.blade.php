@@ -9,10 +9,6 @@
 
     <div class="py-6 sm:py-8">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-            @if (session('status') === 'sos-withdrawn')
-                <p class="text-sm font-medium text-pitch-300">{{ __('Você saiu da disputa.') }}</p>
-            @endif
-
             @if ($playerProfile === null)
                 <x-empty-state icon="heroicon-o-user-circle" :title="__('Complete seu perfil de jogador')" :description="__('Precisamos saber sua posição, modalidades e cidade para te avisar dos SOS da sua região.')">
                     <x-slot name="action">
@@ -31,6 +27,8 @@
                     </x-slot>
                 </x-empty-state>
             @else
+                <x-quota-notice :feature="\App\Enums\Feature::SOS_APPLICATIONS" />
+
                 <x-push-toggle />
 
                 <section>
@@ -50,17 +48,21 @@
                                         <div class="min-w-0">
                                             <div class="flex flex-wrap items-center gap-2">
                                                 <h4 class="font-bold text-white truncate">
-                                                    🧤 {{ $sosRequest->game->date->format('d/m') }} &middot; {{ $sosRequest->game->start_time->format('H:i') }}
+                                                    🧤 {{ $sosRequest->game->team_name }}
                                                 </h4>
                                                 @if ($application?->isPending())
                                                     <x-badge color="amber">{{ __('Candidatura enviada') }}</x-badge>
                                                 @endif
                                             </div>
 
-                                            <p class="mt-1 text-sm text-pitch-400 flex items-center gap-1 truncate">
+                                            <p class="mt-1 text-sm font-bold text-pitch-200">{{ $sosRequest->game->whenLabel() }}</p>
+
+                                            <p class="mt-0.5 text-sm text-pitch-400 flex items-center gap-1 truncate">
                                                 <x-heroicon-o-map-pin class="w-3.5 h-3.5 shrink-0" /> {{ $sosRequest->game->location }}, {{ $sosRequest->game->city }}
                                             </p>
                                             <p class="mt-1 text-xs text-pitch-500">{{ $sosRequest->game->modality }} &middot; {{ __('Organizado por') }} {{ $sosRequest->organizer->name }}</p>
+
+                                            <x-sos-deadline :sos-request="$sosRequest" class="mt-2" />
                                         </div>
 
                                         <div class="text-right shrink-0">
@@ -93,9 +95,8 @@
 
                                 <div class="flex items-center justify-between gap-3 bg-pitch-900 rounded-xl border border-pitch-800 px-4 py-3">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-white truncate">
-                                            {{ $game->date->format('d/m') }} {{ $game->start_time->format('H:i') }} &middot; {{ $game->location }}
-                                        </p>
+                                        <p class="text-sm font-bold text-white truncate">{{ $game->team_name }}</p>
+                                        <p class="text-xs text-pitch-400 truncate">{{ $game->whenLabel() }} &middot; {{ $game->location }}</p>
                                         <p class="text-xs text-pitch-400">{{ __('Você pediu') }} R$ {{ number_format((float) $application->asking_price, 2, ',', '.') }}</p>
                                     </div>
 

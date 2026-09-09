@@ -20,6 +20,7 @@ class PublicGameTest extends TestCase
             'team_name' => 'Futebol de Quarta',
             'location' => 'Arena X',
             'city' => 'Teresina',
+            'state' => 'PI',
             'modality' => 'Society',
             'date' => now()->addDays(3)->format('Y-m-d'),
             'start_time' => '20:00',

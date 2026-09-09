@@ -13,7 +13,7 @@
             </form>
 
             @if ($q === '')
-                <x-empty-state icon="heroicon-o-magnifying-glass" :title="__('Busque um jogador ou contato já cadastrado')" :description="__('Digite o nome, telefone ou e-mail de quem você quer adicionar ao Game.')" />
+                <x-empty-state icon="heroicon-o-magnifying-glass" :title="__('Busque um jogador ou contato já cadastrado')" :description="__('Digite o nome, telefone ou e-mail de quem você quer adicionar à partida.')" />
             @else
                 @if ($userResults->isEmpty() && $guestResults->isEmpty())
                     <x-empty-state icon="heroicon-o-user-group" :title="__('Nenhum resultado encontrado para :q', ['q' => $q])" />
@@ -84,7 +84,7 @@
                 <h3 class="flex items-center gap-1.5 text-sm font-bold uppercase tracking-wide text-pitch-400 mb-1">
                     <x-heroicon-o-identification class="w-4 h-4" /> {{ __('Não tem conta no Futebas?') }}
                 </h3>
-                <p class="text-xs text-pitch-500 mb-4">{{ __('Cadastre um contato novo, ele fica salvo para você adicionar em outros Games sem precisar digitar tudo de novo.') }}</p>
+                <p class="text-xs text-pitch-500 mb-4">{{ __('Cadastre um contato novo, ele fica salvo para você adicionar em outras peladas sem precisar digitar tudo de novo.') }}</p>
 
                 <form method="post" action="{{ route('game-players.store', $game) }}" class="space-y-4">
                     @csrf
@@ -106,7 +106,7 @@
                         </div>
                     </div>
                     <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm shadow-emerald-600/20 transition">
-                        <x-heroicon-o-plus class="w-4 h-4" /> {{ __('Cadastrar e Adicionar ao Game') }}
+                        <x-heroicon-o-plus class="w-4 h-4" /> {{ __('Cadastrar e Adicionar à Partida') }}
                     </button>
                 </form>
             </section>

@@ -170,20 +170,11 @@
                             </div>
                         </section>
 
-                        <div class="flex items-center gap-4 sticky bottom-4 sm:static">
+                        <div class="flex items-center gap-4 sticky-action">
                             <button type="submit" class="inline-flex items-center px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-widest text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition">
                                 {{ __('Salvar') }}
                             </button>
 
-                            @if (session('status') === 'player-profile-updated')
-                                <p
-                                    x-data="{ show: true }"
-                                    x-show="show"
-                                    x-transition
-                                    x-init="setTimeout(() => show = false, 2000)"
-                                    class="text-sm font-medium text-emerald-400 flex items-center gap-1"
-                                ><x-heroicon-o-check-circle class="w-4 h-4" /> {{ __('Salvo.') }}</p>
-                            @endif
                         </div>
                     </div>
                 </form>
